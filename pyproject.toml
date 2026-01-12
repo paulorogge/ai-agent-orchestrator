@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-agent-orchestrator"
+version = "0.1.0"
+description = "Clean architecture framework for orchestrating LLM agents"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "Open Source Contributors" }]
+dependencies = [
+  "pydantic>=2.0.0",
+  "typer>=0.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4.0",
+  "ruff>=0.4.0",
+  "mypy>=1.7.0",
+]
+
+[project.scripts]
+ai-agent-orchestrator = "ai_agent_orchestrator:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_agent_orchestrator"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "BLE"]
+ignore = ["E203"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+strict = true
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra"
+testpaths = ["tests"]
