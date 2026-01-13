@@ -1,4 +1,4 @@
-from ai_agent_orchestrator.agent import Agent
+from ai_agent_orchestrator.agent import Agent, AgentEventType
 from ai_agent_orchestrator.llm import FakeLLM
 from ai_agent_orchestrator.memory.in_memory import InMemoryMemory
 from ai_agent_orchestrator.protocol.outputs import FinalOutput, ToolCallOutput
@@ -23,4 +23,5 @@ def test_agent_handles_tool_then_final() -> None:
     response = agent.run("Add numbers")
 
     assert response.content == "Done"
-    assert any(event.type == "tool_result" for event in response.events)
+    assert response.steps_used == 2
+    assert any(event.type == AgentEventType.TOOL_RESULT for event in response.events)
