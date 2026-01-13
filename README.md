@@ -1,17 +1,27 @@
 # ai-agent-orchestrator
 
-Framework open-source em Python 3.11 para orquestração de agentes LLM com arquitetura limpa, extensibilidade e execução offline.
+Provider-agnostic Python library for orchestrating LLM agents with tools, routing, memory, and structured outputs.
 
-## Visão geral
+## What this is
 
-O projeto fornece um núcleo de orquestração para conversas, ferramentas e roteamento de agentes, com protocolo de saída estruturada e um backend de LLM fake para testes offline.
+- A core orchestration framework that applies Clean Architecture to LLM agent systems.
+- A deterministic, offline-first runtime via `FakeLLM` for reproducible execution and tests.
+- A set of independent components—Agent, Router, Tools, Memory, Protocol—designed with explicit boundaries and separation of concerns.
+
+## What this is not
+
+- NOT a FastAPI application.
+- NOT a hosted service.
+- NOT vendor-locked to any LLM provider.
 
 ## Design goals
 
-- Clean Architecture + SOLID
-- Tipagem estática e validação com Pydantic v2
-- Sem dependência obrigatória de provedores LLM
-- CLI simples para experimentar o loop de agente
+- Clean Architecture at the core.
+- SOLID principles across components.
+- Provider-agnostic LLM abstraction.
+- Deterministic structured outputs for predictable tool-calling.
+- Testability and offline execution.
+- Explicit boundaries between orchestration logic and external integrations.
 
 ## Quickstart
 
@@ -21,37 +31,15 @@ pip install -e ".[dev]"
 
 ```bash
 ai-agent-orchestrator run-example --name basic_chat
+ai-agent-orchestrator run-example --name tool_calling
+ai-agent-orchestrator run-example --name routed_flow
 ```
 
 ```bash
 pytest
 ```
 
-## CLI
-
-```bash
-ai-agent-orchestrator --help
-```
-
-```bash
-ai-agent-orchestrator run-example --name basic_chat
-ai-agent-orchestrator run-example --name tool_calling
-ai-agent-orchestrator run-example --name routed_flow
-```
-
-```bash
-ai-agent-orchestrator list-tools
-```
-
-## Exemplos
-
-```bash
-python examples/basic_chat.py
-python examples/tool_calling.py
-python examples/routed_flow.py
-```
-
-## Protocolo de saída estruturada
+## Structured output protocol (example)
 
 Tool call:
 
@@ -59,7 +47,10 @@ Tool call:
 {
   "type": "tool_call",
   "tool_name": "math.add",
-  "args": {"a": 2, "b": 3}
+  "args": {
+    "a": 2,
+    "b": 3
+  }
 }
 ```
 
@@ -68,6 +59,13 @@ Final:
 ```json
 {
   "type": "final",
-  "content": "texto"
+  "content": "result is 5"
 }
 ```
+
+## Docs
+
+- [Overview](docs/overview.md)
+- [Architecture](docs/architecture.md)
+- [Decisions](docs/decisions.md)
+- [Roadmap](docs/roadmap.md)
