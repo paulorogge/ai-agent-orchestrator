@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import Any, List
 
 from ai_agent_orchestrator.llm import LLMClient
 from ai_agent_orchestrator.memory.base import Memory
@@ -15,7 +15,7 @@ class AgentEvent:
     type: str
     content: str
     tool_name: str | None = None
-    args: dict | None = None
+    args: dict[str, Any] | None = None
 
 
 @dataclass

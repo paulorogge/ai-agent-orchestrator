@@ -20,11 +20,27 @@ pip install -e ".[dev]"
 ```
 
 ```bash
-ai-agent-orchestrator chat "Olá"
+ai-agent-orchestrator run-example --name basic_chat
 ```
 
 ```bash
 pytest
+```
+
+## CLI
+
+```bash
+ai-agent-orchestrator --help
+```
+
+```bash
+ai-agent-orchestrator run-example --name basic_chat
+ai-agent-orchestrator run-example --name tool_calling
+ai-agent-orchestrator run-example --name routed_flow
+```
+
+```bash
+ai-agent-orchestrator list-tools
 ```
 
 ## Exemplos

@@ -23,7 +23,7 @@ dev = [
 ]
 
 [project.scripts]
-ai-agent-orchestrator = "ai_agent_orchestrator:main"
+ai-agent-orchestrator = "ai_agent_orchestrator.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ai_agent_orchestrator"]
