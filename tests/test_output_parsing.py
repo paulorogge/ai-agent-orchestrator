@@ -1,3 +1,8 @@
+from typing import Any, Callable, cast
+
+from pytest import MonkeyPatch
+
+from ai_agent_orchestrator.protocol import outputs
 from ai_agent_orchestrator.protocol.outputs import FinalOutput, ToolCallOutput, parse_output
 
 
@@ -57,3 +62,21 @@ def test_final_non_string_content_converted_to_string() -> None:
     parsed = parse_output('{"type": "final", "content": 123}')
     assert isinstance(parsed, FinalOutput)
     assert parsed.content == "123"
+
+
+def test_final_content_surrogate_fallback(monkeypatch: MonkeyPatch) -> None:
+    raw = '{"type": "final", "content": {"bad": "\\ud800"}}'
+
+    outputs_module = cast(Any, outputs)
+    original_dumps: Callable[..., str] = outputs_module.json.dumps
+
+    def fake_dumps(value: object, *, ensure_ascii: bool) -> str:
+        if ensure_ascii is False:
+            raise UnicodeEncodeError("utf-8", "\ud800", 0, 1, "surrogates not allowed")
+        return original_dumps(value, ensure_ascii=ensure_ascii)
+
+    monkeypatch.setattr(outputs_module.json, "dumps", fake_dumps)
+
+    parsed = parse_output(raw)
+    assert isinstance(parsed, FinalOutput)
+    assert parsed.content == '{"bad": "\\ud800"}'
