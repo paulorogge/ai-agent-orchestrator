@@ -1,6 +1,6 @@
 # ai-agent-orchestrator
 
-Provider-agnostic Python library for orchestrating LLM agents with tools, routing, memory, and structured outputs.
+Provider-agnostic Python library for orchestrating LLM agents with tools, routing, memory, and structured outputs. It is a core orchestration framework, not a toy agent library.
 
 ## What this is
 
