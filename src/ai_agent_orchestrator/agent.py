@@ -11,7 +11,7 @@ from ai_agent_orchestrator.protocol.outputs import FinalOutput, ToolCallOutput, 
 from ai_agent_orchestrator.tools.registry import ToolRegistry
 
 
-class AgentEventType(Enum):
+class AgentEventType(str, Enum):
     LLM_RESPONSE = "llm_response"
     TOOL_CALL = "tool_call"
     TOOL_RESULT = "tool_result"
@@ -58,9 +58,7 @@ class Agent:
             raw_output = self.llm.generate(conversation)
             events.append(
                 AgentEvent(
-                    type=AgentEventType.LLM_RESPONSE,
-                    content=raw_output,
-                    step=step,
+                    type=AgentEventType.LLM_RESPONSE, content=raw_output, step=step
                 )
             )
             parsed = parse_output(raw_output)
@@ -93,12 +91,12 @@ class Agent:
                 self.memory.add(Message(role="assistant", content=parsed.content))
                 events.append(
                     AgentEvent(
-                        type=AgentEventType.FINAL,
-                        content=parsed.content,
-                        step=step,
+                        type=AgentEventType.FINAL, content=parsed.content, step=step
                     )
                 )
-                return AgentResponse(content=parsed.content, events=events, steps_used=step)
+                return AgentResponse(
+                    content=parsed.content, events=events, steps_used=step
+                )
 
         fallback = "Max steps reached without final response."
         self.memory.add(Message(role="assistant", content=fallback))
@@ -109,4 +107,6 @@ class Agent:
                 step=self.max_steps,
             )
         )
-        return AgentResponse(content=fallback, events=events, steps_used=self.max_steps)
+        return AgentResponse(
+            content=fallback, events=events, steps_used=self.max_steps
+        )
