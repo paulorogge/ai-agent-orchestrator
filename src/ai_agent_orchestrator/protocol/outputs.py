@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Literal, Union
 
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import BaseModel, Field, ValidationError
 
 
 class ToolCallOutput(BaseModel):
@@ -52,10 +52,16 @@ def parse_output(raw: str) -> OutputType:
             if isinstance(content, str):
                 return FinalOutput(type="final", content=content)
 
-            try:
+            if isinstance(content, (bool, int, float)) or content is None:
                 return FinalOutput(type="final", content=str(content))
-            except Exception:
-                return FinalOutput(type="final", content=raw)
+
+            if isinstance(content, (dict, list)):
+                return FinalOutput(
+                    type="final",
+                    content=json.dumps(content, ensure_ascii=False),
+                )
+
+            return FinalOutput(type="final", content=raw)
     except ValidationError:
         return FinalOutput(type="final", content=raw)
 
