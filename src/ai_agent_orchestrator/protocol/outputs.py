@@ -20,6 +20,18 @@ class FinalOutput(BaseModel):
 OutputType = Union[ToolCallOutput, FinalOutput]
 
 
+def _serialize_content(content: dict[str, Any] | list[Any]) -> str:
+    try:
+        return json.dumps(content, ensure_ascii=False)
+    except UnicodeEncodeError:
+        try:
+            return json.dumps(content, ensure_ascii=True)
+        except (TypeError, ValueError):
+            return str(content)
+    except (TypeError, ValueError):
+        return str(content)
+
+
 def parse_output(raw: str) -> OutputType:
     try:
         data = json.loads(raw)
@@ -58,7 +70,7 @@ def parse_output(raw: str) -> OutputType:
             if isinstance(content, (dict, list)):
                 return FinalOutput(
                     type="final",
-                    content=json.dumps(content, ensure_ascii=False),
+                    content=_serialize_content(content),
                 )
 
             return FinalOutput(type="final", content=raw)
