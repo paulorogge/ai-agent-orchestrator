@@ -5,13 +5,10 @@ import importlib.util
 import json
 import os
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import Any, Sequence, cast
 
 from ai_agent_orchestrator.llm import LLMClient
 from ai_agent_orchestrator.protocol.messages import Message
-
-if TYPE_CHECKING:
-    import httpx
 
 DEFAULT_BASE_URL = "http://localhost:1234/v1"
 DEFAULT_TIMEOUT = 30.0
@@ -48,8 +45,8 @@ class LMStudioClient(LLMClient):
                 'pip install -e ".[lmstudio]"'
             )
         httpx_module = importlib.import_module("httpx")
-        resolved_base_url = base_url or os.getenv("LMSTUDIO_BASE_URL", DEFAULT_BASE_URL)
-        resolved_model = model or os.getenv("LMSTUDIO_MODEL", "")
+        resolved_base_url = base_url or os.getenv("LMSTUDIO_BASE_URL") or DEFAULT_BASE_URL
+        resolved_model = model or os.getenv("LMSTUDIO_MODEL") or ""
         if not resolved_model:
             raise ValueError("LMSTUDIO_MODEL is required to call LM Studio")
         resolved_api_key = api_key or os.getenv("LMSTUDIO_API_KEY")
@@ -97,7 +94,7 @@ class LMStudioClient(LLMClient):
 
         data = response.json()
         try:
-            return data["choices"][0]["message"]["content"]
+            return cast(str, data["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError) as exc:
             raise RuntimeError("LM Studio response was missing message content") from exc
 

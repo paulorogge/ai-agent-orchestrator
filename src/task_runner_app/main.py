@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Annotated
 
 import typer
 
@@ -33,11 +34,13 @@ Available tools:
 
 @app.command()
 def task_runner(
-    instruction: str = typer.Argument(..., help="Instruction to execute"),
-    workspace: Path = typer.Option(
-        DEFAULT_WORKSPACE, "--workspace", help="Workspace directory"
-    ),
-    max_steps: int = typer.Option(6, "--max-steps", help="Maximum tool steps"),
+    instruction: Annotated[str, typer.Argument(..., help="Instruction to execute")],
+    workspace: Annotated[
+        Path, typer.Option("--workspace", help="Workspace directory")
+    ] = DEFAULT_WORKSPACE,
+    max_steps: Annotated[
+        int, typer.Option("--max-steps", help="Maximum tool steps")
+    ] = 6,
 ) -> None:
     repo_root = Path.cwd().resolve()
     workspace_root = (

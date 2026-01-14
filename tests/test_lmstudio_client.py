@@ -5,7 +5,7 @@ import json
 from typing import Any
 
 from ai_agent_orchestrator.protocol.messages import Message
-from task_runner_app.llm import LMStudioClient, PROTOCOL_REMINDER
+from task_runner_app.llm import PROTOCOL_REMINDER, LMStudioClient
 
 
 def test_lmstudio_client_retries_on_protocol_violation() -> None:

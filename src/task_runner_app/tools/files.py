@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from ai_agent_orchestrator.tools.base import Tool, ToolInput
 from task_runner_app.tools.sandbox import resolve_path
