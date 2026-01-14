@@ -26,6 +26,11 @@ Tool names are EXACT and must match the list below. Do not invent new tool names
 shorten them. For example, never respond with a made-up tool name like "tasks" when the
 list says "tasks.list".
 
+Do not repeat the same tool call more than once for the same instruction.
+After a tool call completes the user request successfully, you MUST respond with:
+{"type":"final","content":"..."}.
+For listing tasks, always call tasks.list (or alias tasks), then respond with final.
+
 Available tools:
 - files.read_text(path): Read a UTF-8 text file within the repo or workspace.
 - files.list_dir(path): List directory contents within the repo or workspace.
@@ -35,8 +40,15 @@ Available tools:
 - tasks.list(): List tasks from workspace/tasks.json.
 
 Examples:
-"List my tasks." -> {"type":"tool_call","tool_name":"tasks.list","args":{}}
-"Add a task ..." -> {"type":"tool_call","tool_name":"tasks.add","args":{"title":"Fix","notes":"Bug","priority":"high"}}
+"List my tasks." ->
+{"type":"tool_call","tool_name":"tasks.list","args":{}}
+
+"Add a task ..." ->
+{"type":"tool_call","tool_name":"tasks.add","args":{
+  "title":"Fix",
+  "notes":"Bug",
+  "priority":"high"
+}}
 """
 
 
