@@ -26,7 +26,9 @@ Tool names are EXACT and must match the list below. Do not invent new tool names
 shorten them. For example, never respond with a made-up tool name like "tasks" when the
 list says "tasks.list".
 
-Do not repeat the same tool call more than once for the same instruction.
+You may call tools multiple times, including the same tool.
+Do not repeat the same tool_name with identical args if the prior result indicates
+success or no change. If retrying, change args or switch tools to make progress.
 After a tool call completes the user request successfully, you MUST respond with:
 {"type":"final","content":"..."}.
 For listing tasks, always call tasks.list (or alias tasks), then respond with final.
