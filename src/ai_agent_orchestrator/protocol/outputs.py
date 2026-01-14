@@ -73,7 +73,7 @@ def parse_output(raw: str) -> OutputType:
                     content=_serialize_content(content),
                 )
 
-            return FinalOutput(type="final", content=raw)
+            return FinalOutput(type="final", content=str(content))
     except ValidationError:
         return FinalOutput(type="final", content=raw)
 
