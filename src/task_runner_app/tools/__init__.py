@@ -9,7 +9,7 @@ from task_runner_app.tools.files import (
     FilesWriteTextTool,
     TextSearchTool,
 )
-from task_runner_app.tools.tasks import TaskAddTool, TaskListTool
+from task_runner_app.tools.tasks import TaskAddTool, TaskListAliasTool, TaskListTool
 
 
 def build_tool_registry(repo_root: Path, workspace_root: Path) -> ToolRegistry:
@@ -22,5 +22,6 @@ def build_tool_registry(repo_root: Path, workspace_root: Path) -> ToolRegistry:
     registry.register(FilesWriteTextTool(workspace_root))
     registry.register(TaskAddTool(workspace_root))
     registry.register(TaskListTool(workspace_root))
+    registry.register(TaskListAliasTool(workspace_root))
 
     return registry

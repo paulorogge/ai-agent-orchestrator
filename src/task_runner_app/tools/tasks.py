@@ -62,6 +62,23 @@ class TaskListTool(Tool[TaskListInput]):
         return json.dumps(tasks, ensure_ascii=False, indent=2)
 
 
+class TaskListAliasTool(Tool[TaskListInput]):
+    name = "tasks"
+    description = "Alias for tasks.list to list tasks from the workspace task list."
+    input_model = TaskListInput
+
+    def __init__(self, workspace_root: Path) -> None:
+        self._workspace_root = workspace_root
+
+    def run(self, validated_input: TaskListInput) -> str:
+        tasks_path = resolve_path(
+            str(self._workspace_root / "tasks.json"),
+            [self._workspace_root],
+        )
+        tasks = _load_tasks(tasks_path)
+        return json.dumps(tasks, ensure_ascii=False, indent=2)
+
+
 def _load_tasks(path: Path) -> list[dict[str, str]]:
     if not path.exists():
         return []
