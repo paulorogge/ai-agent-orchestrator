@@ -5,13 +5,13 @@ from pathlib import Path
 
 import pytest
 
+from task_runner_app.tools import build_tool_registry
 from task_runner_app.tools.files import (
     FilesListDirTool,
     FilesReadTextTool,
     FilesWriteTextTool,
     TextSearchTool,
 )
-from task_runner_app.tools import build_tool_registry
 from task_runner_app.tools.sandbox import SandboxPathError
 
 
