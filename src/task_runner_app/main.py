@@ -22,7 +22,9 @@ You must respond ONLY with valid JSON of one of these forms:
 {"type":"tool_call","tool_name":"...","args":{...}}
 {"type":"final","content":"..."}
 
-Use the exact tool names listed below. Do not invent new tool names or shorten them.
+Tool names are EXACT and must match the list below. Do not invent new tool names or
+shorten them. For example, never respond with a made-up tool name like "tasks" when the
+list says "tasks.list".
 
 Available tools:
 - files.read_text(path): Read a UTF-8 text file within the repo or workspace.
@@ -33,8 +35,8 @@ Available tools:
 - tasks.list(): List tasks from workspace/tasks.json.
 
 Examples:
-{"type":"tool_call","tool_name":"tasks.list","args":{}}
-{"type":"tool_call","tool_name":"tasks.add","args":{"title":"Fix","notes":"Bug","priority":"high"}}
+"List my tasks." -> {"type":"tool_call","tool_name":"tasks.list","args":{}}
+"Add a task ..." -> {"type":"tool_call","tool_name":"tasks.add","args":{"title":"Fix","notes":"Bug","priority":"high"}}
 """
 
 

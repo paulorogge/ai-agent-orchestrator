@@ -39,3 +39,24 @@ def test_task_runner_flow_with_fake_llm(tmp_path: Path) -> None:
     assert tasks == [
         {"title": "Ship release", "notes": "Prep", "priority": "high"}
     ]
+
+
+def test_task_runner_accepts_tasks_alias_tool(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    tool_call = {"type": "tool_call", "tool_name": "tasks", "args": {}}
+    final_response = {"type": "final", "content": "Listed!"}
+
+    llm = FakeLLM(
+        responses=[json.dumps(tool_call, ensure_ascii=False), json.dumps(final_response)]
+    )
+    memory = InMemoryMemory()
+    memory.add(Message(role="system", content="You are a test."))
+
+    tools = build_tool_registry(tmp_path, workspace)
+    agent = Agent(llm=llm, tools=tools, memory=memory, max_steps=3)
+
+    response = agent.run("List tasks")
+
+    assert response.content == "Listed!"

@@ -11,6 +11,7 @@ from task_runner_app.tools.files import (
     FilesWriteTextTool,
     TextSearchTool,
 )
+from task_runner_app.tools import build_tool_registry
 from task_runner_app.tools.sandbox import SandboxPathError
 
 
@@ -72,3 +73,23 @@ def test_write_tool_restricts_to_workspace(tmp_path: Path) -> None:
         write_tool.run(
             write_tool.validate({"path": str(outside_path), "content": "blocked"})
         )
+
+
+def test_tasks_alias_matches_list_output(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    tasks_path = workspace / "tasks.json"
+    tasks_path.write_text(
+        json.dumps(
+            [{"title": "Plan", "notes": "Outline", "priority": "normal"}],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    registry = build_tool_registry(tmp_path, workspace)
+
+    list_output = registry.run("tasks.list", {})
+    alias_output = registry.run("tasks", {})
+
+    assert alias_output == list_output
