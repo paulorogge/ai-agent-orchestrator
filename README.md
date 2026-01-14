@@ -29,6 +29,11 @@ Provider-agnostic Python library for orchestrating LLM agents with tools, routin
 pip install -e ".[dev]"
 ```
 
+## LM Studio Task Runner
+
+Looking for the LM Studio-powered task runner CLI? See
+[docs/task-runner.md](docs/task-runner.md).
+
 ```bash
 ai-agent-orchestrator run-example --name basic_chat
 ai-agent-orchestrator run-example --name tool_calling
