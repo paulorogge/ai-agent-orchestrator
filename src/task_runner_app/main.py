@@ -22,6 +22,8 @@ You must respond ONLY with valid JSON of one of these forms:
 {"type":"tool_call","tool_name":"...","args":{...}}
 {"type":"final","content":"..."}
 
+Use the exact tool names listed below. Do not invent new tool names or shorten them.
+
 Available tools:
 - files.read_text(path): Read a UTF-8 text file within the repo or workspace.
 - files.list_dir(path): List directory contents within the repo or workspace.
@@ -29,6 +31,10 @@ Available tools:
 - text.search(path, query): Search for a string within a text file.
 - tasks.add(title, notes, priority): Add a task entry to workspace/tasks.json.
 - tasks.list(): List tasks from workspace/tasks.json.
+
+Examples:
+{"type":"tool_call","tool_name":"tasks.list","args":{}}
+{"type":"tool_call","tool_name":"tasks.add","args":{"title":"Fix","notes":"Bug","priority":"high"}}
 """
 
 

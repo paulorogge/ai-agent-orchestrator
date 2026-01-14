@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from ai_agent_orchestrator.tools.base import Tool, ToolInput
 from task_runner_app.tools.sandbox import resolve_path
@@ -54,6 +54,27 @@ class TaskListTool(Tool[TaskListInput]):
         self._workspace_root = workspace_root
 
     def run(self, validated_input: TaskListInput) -> str:
+        tasks_path = resolve_path(
+            str(self._workspace_root / "tasks.json"),
+            [self._workspace_root],
+        )
+        tasks = _load_tasks(tasks_path)
+        return json.dumps(tasks, ensure_ascii=False, indent=2)
+
+
+class TaskListAliasInput(ToolInput):
+    model_config = ConfigDict(extra="forbid")
+
+
+class TaskListAliasTool(Tool[TaskListAliasInput]):
+    name = "tasks"
+    description = "Alias for tasks.list to list tasks from the workspace task list."
+    input_model = TaskListAliasInput
+
+    def __init__(self, workspace_root: Path) -> None:
+        self._workspace_root = workspace_root
+
+    def run(self, validated_input: TaskListAliasInput) -> str:
         tasks_path = resolve_path(
             str(self._workspace_root / "tasks.json"),
             [self._workspace_root],
