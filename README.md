@@ -44,7 +44,9 @@ pip install -e ".[dev,lmstudio]"
 
 ## Core concepts
 
-- **Agent**: Runs a loop that parses structured outputs and executes tools.
+- **Agent**: Runs a multi-step loop that parses structured outputs and executes
+  tools until a final response or `max_steps` is reached. The same tool can be
+  called multiple times within a single user instruction if the task requires it.
 - **Tools**: Typed inputs via Pydantic; tools return string outputs.
 - **ToolRegistry**: Registers tools and validates inputs before execution.
 - **Router**: Simple rule-based routing between agents.
@@ -75,7 +77,11 @@ Final:
 }
 ```
 
-If a model returns non-JSON output, the agent treats it as a final response.
+Tool calls and final responses must follow this protocol. The agent enforces the
+protocol by only acting on valid `tool_call` or `final` objects; anything else
+is treated as a plain final response and does not trigger tool execution. When
+using LM Studio, the task runner may issue a corrective retry if the model
+returns non-compliant output.
 
 ## Quickstart (library)
 
@@ -100,6 +106,16 @@ Notes:
 
 - Built-in tools include `math.add` and `echo` (see `ai-agent-orchestrator list-tools`).
 - The agent stops after `max_steps` tool iterations and returns a fallback message.
+  Infinite loops are prevented via `max_steps`, not by restricting tool usage.
+
+## Multi-step example
+
+A single instruction can require multiple tool calls. For example, in the task
+runner the agent can add a task and then list tasks before responding:
+
+1. `{"type":"tool_call","tool_name":"tasks.add","args":{"title":"Draft launch email","notes":"Add outline","priority":"high"}}`
+2. `{"type":"tool_call","tool_name":"tasks.list","args":{}}`
+3. `{"type":"final","content":"Added the task and listed current tasks."}`
 
 ## CLI examples
 
@@ -126,9 +142,17 @@ OpenAI-compatible API.
 task-runner "Add a high priority task to draft the launch email."
 ```
 
-See [docs/task-runner.md](docs/task-runner.md) for setup and environment
-variables. The task runner enforces the same JSON protocol and uses the core
-agent loop with tool calls.
+Required environment variables:
+
+- `LMSTUDIO_MODEL` (required)
+- `LMSTUDIO_BASE_URL` (optional, defaults to `http://localhost:1234/v1`)
+- `LMSTUDIO_API_KEY` (optional, for servers that require auth)
+- `WORKSPACE_DIR` (optional, workspace path for task runner tools)
+
+The task runner calls LM Studio through its OpenAI-compatible API, but the core
+orchestrator remains provider-agnostic via the `LLMClient` interface. See
+[docs/task-runner.md](docs/task-runner.md) for setup details. The task runner
+enforces the same JSON protocol and uses the core agent loop with tool calls.
 
 ## Testing
 
