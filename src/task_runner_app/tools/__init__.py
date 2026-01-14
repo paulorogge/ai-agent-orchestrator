@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from ai_agent_orchestrator.tools.registry import ToolRegistry
-
 from task_runner_app.tools.files import (
     FilesListDirTool,
     FilesReadTextTool,

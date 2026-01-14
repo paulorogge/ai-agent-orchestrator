@@ -5,13 +5,10 @@ import importlib.util
 import json
 import os
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import Any, Sequence
 
 from ai_agent_orchestrator.llm import LLMClient
 from ai_agent_orchestrator.protocol.messages import Message
-
-if TYPE_CHECKING:
-    import httpx
 
 DEFAULT_BASE_URL = "http://localhost:1234/v1"
 DEFAULT_TIMEOUT = 30.0
