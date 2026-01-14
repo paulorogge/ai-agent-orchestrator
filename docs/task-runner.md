@@ -5,10 +5,16 @@ OpenAI-compatible server.
 
 ## Install
 
-From this repo:
+From this repo (includes LM Studio extra):
 
 ```bash
 pip install -e ".[dev,lmstudio]"
+```
+
+For core library development only (no LM Studio dependencies):
+
+```bash
+pip install -e ".[dev]"
 ```
 
 From another project, install the orchestration library via git and your app

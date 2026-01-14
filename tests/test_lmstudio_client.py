@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 from typing import Any
-
-import httpx
 
 from ai_agent_orchestrator.protocol.messages import Message
 from task_runner_app.llm import LMStudioClient, PROTOCOL_REMINDER
 
 
 def test_lmstudio_client_retries_on_protocol_violation() -> None:
+    if importlib.util.find_spec("httpx") is None:
+        import pytest
+
+        pytest.skip("httpx not installed; lmstudio extra not enabled")
+
+    import httpx
+
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:

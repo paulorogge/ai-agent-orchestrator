@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import importlib
+import importlib.util
 import json
 import os
 from dataclasses import dataclass
-from typing import Sequence
-
-import httpx
+from typing import TYPE_CHECKING, Any, Sequence
 
 from ai_agent_orchestrator.llm import LLMClient
 from ai_agent_orchestrator.protocol.messages import Message
+
+if TYPE_CHECKING:
+    import httpx
 
 DEFAULT_BASE_URL = "http://localhost:1234/v1"
 DEFAULT_TIMEOUT = 30.0
@@ -37,8 +40,14 @@ class LMStudioClient(LLMClient):
         model: str | None = None,
         api_key: str | None = None,
         timeout: float = DEFAULT_TIMEOUT,
-        client: httpx.Client | None = None,
+        client: Any | None = None,
     ) -> None:
+        if importlib.util.find_spec("httpx") is None:
+            raise RuntimeError(
+                "httpx is required for LM Studio support. Install with: "
+                'pip install -e ".[lmstudio]"'
+            )
+        httpx_module = importlib.import_module("httpx")
         resolved_base_url = base_url or os.getenv("LMSTUDIO_BASE_URL", DEFAULT_BASE_URL)
         resolved_model = model or os.getenv("LMSTUDIO_MODEL", "")
         if not resolved_model:
@@ -51,9 +60,10 @@ class LMStudioClient(LLMClient):
             api_key=resolved_api_key,
             timeout=timeout,
         )
-        self._client = client or httpx.Client(
+        self._httpx = httpx_module
+        self._client = client or httpx_module.Client(
             base_url=self._config.base_url,
-            timeout=httpx.Timeout(self._config.timeout),
+            timeout=httpx_module.Timeout(self._config.timeout),
         )
 
     def generate(self, conversation: Sequence[Message]) -> str:
@@ -82,7 +92,7 @@ class LMStudioClient(LLMClient):
                 headers=headers,
             )
             response.raise_for_status()
-        except httpx.HTTPError as exc:
+        except self._httpx.HTTPError as exc:
             raise RuntimeError(f"LM Studio request failed: {exc}") from exc
 
         data = response.json()
