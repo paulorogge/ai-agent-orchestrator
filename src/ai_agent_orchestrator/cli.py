@@ -64,3 +64,7 @@ def _get_example_path(example_name: ExampleName) -> Path:
 
 def main() -> None:
     app()
+
+
+if __name__ == "__main__":
+    main()
