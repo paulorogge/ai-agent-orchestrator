@@ -50,8 +50,8 @@ and tool results are **not** emitted by default.
 - `agent.output.parsed`
   - `parsed_type: "tool_call" | "final" | "invalid"`
   - `is_valid: bool`
-  - `tool_name: str` (optional; only for tool calls)
-  - `args_keys: list[str]` (optional; only for tool calls)
+  - `tool_name: str` (present only when parsed_type == "tool_call" and is_valid == True)
+  - `args_keys: list[str]` (present only when parsed_type == "tool_call" and is_valid == True)
 - `agent.tool.started`
   - `tool_name: str`
   - `args_keys: list[str]`
@@ -78,6 +78,8 @@ Hooks are emitted at the boundaries of the agent loop:
 4. Output parse
 5. Tool start/finish (if tool call)
 
+`agent.run.finished` is emitted only on non-exception completion; failures emit `agent.run.failed` instead.
+
 ## Example sinks
 
 ### JSONL print sink
@@ -87,7 +89,7 @@ from ai_agent_orchestrator.observability.events import AgentEvent
 
 
 def jsonl_sink(event: AgentEvent) -> None:
-    # If AgentEvent is a dataclass, print(asdict(event)) or json.dumps(asdict(event)).
+    # Tip: convert the event to a JSON dict before writing JSONL, if desired.
     print(event)
 ```
 
