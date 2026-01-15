@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-01-15
 ### Added
 - Explicit callable tool plugin model.
 - Plugin helper with unit tests.
