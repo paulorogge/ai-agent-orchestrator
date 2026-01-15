@@ -2,6 +2,7 @@
 
 The agent loop can emit a small, stable set of structured events. You provide a sink to consume
 those events (for logging, tests, or custom exporters). No backends or exporters are built in.
+Events are emitted only when an event_sink is provided.
 
 ## Event envelope
 
