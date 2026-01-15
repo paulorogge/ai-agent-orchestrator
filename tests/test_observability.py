@@ -115,8 +115,10 @@ def test_event_determinism() -> None:
     sink = ListEventSink()
 
     clock = _incrementing_clock(1000)
+
     def run_id_factory() -> str:
         return "run_test"
+
     span_id_factory = _id_factory("sp_")
 
     agent = Agent(llm=llm, tools=tools, memory=memory)
@@ -136,6 +138,8 @@ def test_event_determinism() -> None:
     assert sink.events[2].span_id == "sp_3"
     assert sink.events[2].parent_span_id == "sp_2"
     assert sink.events[2].step == 1
+    assert sink.events[-1].name == "agent.run.finished"
+    assert sink.events[-1].data["outcome"] == "final"
 
 
 def test_args_keys_no_values() -> None:
@@ -186,11 +190,15 @@ def test_tool_error_emits_run_failed_and_tool_finished() -> None:
     with pytest.raises(Exception) as excinfo:
         agent.run("Trigger error", event_sink=sink)
 
-    tool_finished = [event for event in sink.events if event.name == "agent.tool.finished"]
+    tool_finished = [
+        event for event in sink.events if event.name == "agent.tool.finished"
+    ]
     assert tool_finished
     assert tool_finished[-1].data["status"] == "error"
     assert tool_finished[-1].data["error_type"] == excinfo.value.__class__.__name__
 
-    run_failed = [event for event in sink.events if event.name == "agent.run.failed"]
+    run_failed = [
+        event for event in sink.events if event.name == "agent.run.failed"
+    ]
     assert run_failed
     assert run_failed[-1].data["error_type"] == excinfo.value.__class__.__name__
