@@ -174,5 +174,6 @@ pytest
 - [Overview](docs/overview.md)
 - [Architecture](docs/architecture.md)
 - [Decisions](docs/decisions.md)
+- [Observability](docs/observability.md)
 - [Plugins](docs/plugins.md)
 - [Roadmap](docs/roadmap.md)
