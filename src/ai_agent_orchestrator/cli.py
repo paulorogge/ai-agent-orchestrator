@@ -6,9 +6,9 @@ from typing import Annotated, Iterable, Literal
 
 import typer
 
+from ai_agent_orchestrator.tools import ToolRegistry
 from ai_agent_orchestrator.tools.builtin.echo_tool import EchoTool
 from ai_agent_orchestrator.tools.builtin.math_tool import MathAddTool
-from ai_agent_orchestrator.tools import ToolRegistry
 
 app = typer.Typer(no_args_is_help=True)
 
