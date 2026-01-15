@@ -23,8 +23,7 @@ def _build_default_registry() -> ToolRegistry:
 
 
 def _iter_registered_tools(registry: ToolRegistry) -> Iterable[tuple[str, str]]:
-    tools = registry._tools
-    return ((tool.name, tool.description) for tool in tools.values())
+    return ((tool.name, tool.description) for tool in registry.iter_tools())
 
 
 @app.command("run-example")
