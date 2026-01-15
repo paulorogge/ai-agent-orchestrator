@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, List, Mapping
 
+from ai_agent_orchestrator.llm import LLMClient
+from ai_agent_orchestrator.memory.base import Memory
 from ai_agent_orchestrator.observability.clock import Clock, system_clock_ms
 from ai_agent_orchestrator.observability.events import EventSink, build_event, emit_event
 from ai_agent_orchestrator.observability.ids import (
@@ -13,9 +15,6 @@ from ai_agent_orchestrator.observability.ids import (
     default_run_id,
     default_span_id,
 )
-
-from ai_agent_orchestrator.llm import LLMClient
-from ai_agent_orchestrator.memory.base import Memory
 from ai_agent_orchestrator.protocol.messages import Message
 from ai_agent_orchestrator.protocol.outputs import FinalOutput, ToolCallOutput, parse_output
 from ai_agent_orchestrator.tools.registry import ToolRegistry
@@ -358,20 +357,13 @@ def _classify_output(
 
     output_type = data.get("type")
     if output_type == "tool_call":
-        tool_name = data.get("tool_name")
-        args = data.get("args", {})
-        if (
-            isinstance(tool_name, str)
-            and tool_name.strip()
-            and isinstance(args, dict)
-            and isinstance(parsed, ToolCallOutput)
-        ):
+        if isinstance(parsed, ToolCallOutput):
             return (
                 "tool_call",
                 True,
                 {
-                    "tool_name": tool_name,
-                    "args_keys": sorted(args.keys()),
+                    "tool_name": parsed.tool_name,
+                    "args_keys": sorted(parsed.args.keys()),
                 },
             )
         return "invalid", False, {}

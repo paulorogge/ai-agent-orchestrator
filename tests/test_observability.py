@@ -4,6 +4,7 @@ from collections import deque
 from typing import Callable
 
 import pytest
+
 from ai_agent_orchestrator.agent import Agent
 from ai_agent_orchestrator.llm import FakeLLM
 from ai_agent_orchestrator.memory.in_memory import InMemoryMemory
@@ -113,7 +114,8 @@ def test_event_determinism() -> None:
     sink = ListEventSink()
 
     clock = _fixed_clock(1000, 20)
-    run_id_factory = lambda: "run_test"
+    def run_id_factory() -> str:
+        return "run_test"
     span_id_factory = _id_factory("sp_")
 
     agent = Agent(llm=llm, tools=tools, memory=memory)
