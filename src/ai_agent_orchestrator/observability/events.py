@@ -28,8 +28,7 @@ def emit_event(sink: EventSink | None, event: AgentEvent) -> None:
     if callable(sink):
         sink(event)
         return
-    if hasattr(sink, "emit"):
-        sink.emit(event)
+    sink.emit(event)
 
 
 def build_event(
@@ -49,7 +48,7 @@ def build_event(
         step=step,
         span_id=span_id,
         parent_span_id=parent_span_id,
-        data=data or {},
+        data={} if data is None else data,
     )
 
 
