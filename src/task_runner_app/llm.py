@@ -42,7 +42,7 @@ class LMStudioClient(LLMClient):
         if importlib.util.find_spec("httpx") is None:
             raise RuntimeError(
                 "httpx is required for LM Studio support. Install with: "
-                'pip install -e ".[lmstudio]"'
+                "pip install .[lmstudio]"
             )
         httpx_module = importlib.import_module("httpx")
         resolved_base_url = base_url or os.getenv("LMSTUDIO_BASE_URL") or DEFAULT_BASE_URL
