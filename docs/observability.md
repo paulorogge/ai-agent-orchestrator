@@ -43,15 +43,15 @@ and tool results are **not** emitted by default.
   - `input_messages_count: int`
 - `agent.model.requested`
   - `message_count: int`
-  - `tool_count: int` (optional)
+  - `tool_count: int`
 - `agent.model.responded`
-  - `response_type: str` (e.g. "text")
+  - `response_type: str` (currently "text")
   - `raw_length: int`
 - `agent.output.parsed`
   - `parsed_type: "tool_call" | "final" | "invalid"`
   - `is_valid: bool`
-  - `tool_name: str` (optional; only for tool calls)
-  - `args_keys: list[str]` (optional; only for tool calls)
+  - `tool_name: str` (only for tool calls)
+  - `args_keys: list[str]` (only for tool calls)
 - `agent.tool.started`
   - `tool_name: str`
   - `args_keys: list[str]`
@@ -87,7 +87,6 @@ from ai_agent_orchestrator.observability.events import AgentEvent
 
 
 def jsonl_sink(event: AgentEvent) -> None:
-    # If AgentEvent is a dataclass, print(asdict(event)) or json.dumps(asdict(event)).
     print(event)
 ```
 
