@@ -14,15 +14,28 @@
 - CLI uses `ToolRegistry.iter_tools()` (no direct `_tools` access).
 
 ### v0.3.0 Observability hooks / tracing improvements (planned)
-- Structured events, spans, and trace-friendly hooks.
-- Debugging and metrics integration points.
+- Minimal scope: emit a small, stable set of structured events/spans from the agent loop.
+- Minimal scope: document extension points for consuming events (no built-in exporters).
+- Non-goal: adding new observability backends or metrics dashboards.
+- Non-goal: changing core agent behavior or tool execution semantics.
+- Acceptance: events/spans can be captured in tests via a simple hook with deterministic fields.
+- Acceptance: docs describe the event payload shape and where hooks are invoked.
 
 ### v0.4.0 Async + streaming (planned)
-- Async agent loop support.
-- Streaming outputs for intermediate tokens or tool calls.
+- Minimal scope: async-compatible agent loop entrypoint with parity to sync behavior.
+- Minimal scope: optional streaming interface for incremental model output.
+- Non-goal: reworking all tools to be async-first or adding new streaming protocols.
+- Non-goal: guaranteeing streaming support across all LLM providers.
+- Acceptance: async loop passes existing tests (or equivalent async variants) without behavior drift.
+- Acceptance: streaming path emits incremental chunks in a documented, stable shape.
 
 ### v0.5.x+ Persistent memory adapters exploration (tentative)
-- Explore persistent memory adapters (no commitments).
+- Minimal scope: outline a thin adapter interface for persistence experiments.
+- Minimal scope: one example adapter behind a clearly experimental flag or namespace.
+- Non-goal: committing to a long-term storage backend or migration strategy.
+- Non-goal: expanding memory features beyond what exists today.
+- Acceptance: adapter interface is documented with explicit stability caveats.
+- Acceptance: example adapter can be enabled in a demo/test without affecting defaults.
 
 ### v1.0.0 Stable API + compatibility guarantees (planned)
 - Stabilized public API surface.
