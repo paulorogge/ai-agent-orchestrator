@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-def test_plugin_example_smoke():
+def test_plugin_example_smoke() -> None:
     script_path = Path(__file__).resolve().parents[1] / "examples" / "plugins" / "basic_plugins.py"
 
     result = subprocess.run(
