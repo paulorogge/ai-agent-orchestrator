@@ -1,6 +1,7 @@
 import pytest
 
 from ai_agent_orchestrator.tools.builtin.echo_tool import EchoTool
+from ai_agent_orchestrator.tools.builtin.math_tool import MathAddTool
 from ai_agent_orchestrator.tools.registry import ToolRegistry
 from ai_agent_orchestrator.utils.errors import ToolExecutionError, ToolNotFoundError
 
@@ -26,3 +27,13 @@ def test_registry_invalid_args_raise() -> None:
 
     with pytest.raises(ToolExecutionError):
         registry.run("echo", {"message": 123})
+
+
+def test_registry_iter_tools_preserves_order() -> None:
+    registry = ToolRegistry()
+    registry.register(EchoTool())
+    registry.register(MathAddTool())
+
+    tool_names = [tool.name for tool in registry.iter_tools()]
+
+    assert tool_names == ["echo", "math.add"]
