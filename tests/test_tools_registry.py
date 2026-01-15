@@ -2,7 +2,7 @@ import pytest
 
 from ai_agent_orchestrator.tools.builtin.echo_tool import EchoTool
 from ai_agent_orchestrator.tools.builtin.math_tool import MathAddTool
-from ai_agent_orchestrator.tools import ToolRegistry
+from ai_agent_orchestrator.tools.registry import ToolRegistry
 from ai_agent_orchestrator.utils.errors import ToolExecutionError, ToolNotFoundError
 
 
