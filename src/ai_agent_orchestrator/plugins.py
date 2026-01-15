@@ -12,7 +12,7 @@ class PluginProtocol(Protocol):
 
 
 def apply_plugins(registry: ToolRegistry, plugins: Iterable[object]) -> None:
-    """Apply callable plugins or objects implementing register()."""
+    """Apply explicit-only (no discovery) plugins or registerable objects."""
     for plugin in plugins:
         if isinstance(plugin, PluginProtocol):
             plugin.register(registry)
@@ -21,5 +21,6 @@ def apply_plugins(registry: ToolRegistry, plugins: Iterable[object]) -> None:
             plugin(registry)
             continue
         raise TypeError(
-            "Plugin must implement register(registry) or be callable."
+            "Plugin must implement register(registry) or be callable. "
+            f"Got {plugin!r} ({type(plugin).__name__})."
         )
