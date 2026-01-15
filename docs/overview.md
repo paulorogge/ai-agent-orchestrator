@@ -3,7 +3,9 @@
 ## Project Charter
 
 ### Problem
-Teams building agentic LLM systems often need a lightweight, provider-agnostic core for coordinating tools, routing, memory, and structured outputs without committing to a web framework or a hosted service.
+Teams building agentic LLM systems often need a lightweight, provider-agnostic
+core for coordinating tools, routing, memory, and structured outputs without
+committing to a web framework or hosted service.
 
 ### Audience
 - Engineers building local prototypes and internal tools.
@@ -23,12 +25,16 @@ Teams building agentic LLM systems often need a lightweight, provider-agnostic c
 
 ## Concepts
 
-- **Agent**: Orchestrates the loop, manages conversation state, and delegates tool execution.
-- **Tools**: Callable capabilities exposed to agents (e.g., math, retrieval, side effects).
+- **Agent**: Orchestrates the loop, manages conversation state, and delegates
+  tool execution.
+- **Tools**: Callable capabilities exposed to agents (e.g., math, retrieval,
+  side effects).
 - **ToolRegistry**: Catalog and dispatcher for tool definitions and executions.
 - **Router**: Selects the next agent based on routing rules or signals.
-- **Memory**: Persistence abstraction for conversation history.
-- **Protocol**: JSON-structured outputs that describe tool calls and final responses.
+- **Memory**: Conversation history abstraction that can be swapped for different
+  backends. The default implementation is an in-memory list of messages.
+- **Protocol**: JSON-structured outputs that describe tool calls and final
+  responses.
 
 ## Walkthrough
 
@@ -36,7 +42,9 @@ Teams building agentic LLM systems often need a lightweight, provider-agnostic c
 2. The agent requests an LLM completion and receives a structured JSON message.
 3. If the message is a **tool_call**, the agent executes it via the ToolRegistry.
 4. The tool returns a **tool_result** payload to the agent.
-5. The agent sends the tool result back to the LLM and receives a **final** response.
+5. The agent sends the tool result back to the LLM and receives a **final**
+   response. The loop can repeat tool calls as needed until `max_steps` is
+   reached.
 
 ```
 user -> agent -> tool_call -> tool_result -> final
