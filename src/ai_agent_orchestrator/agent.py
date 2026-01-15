@@ -70,6 +70,7 @@ class Agent:
         events: List[AgentEvent] = []
         run_id = run_id_factory()
         run_span_id = span_id_factory()
+        tool_count = len(list(self.tools.iter_tools()))
         step_span_id = run_span_id
         current_step = 0
         step_finished_emitted = False
@@ -92,6 +93,7 @@ class Agent:
                 current_step = step
                 step_finished_emitted = False
                 step_span_id = span_id_factory()
+                conversation = self.memory.get_conversation()
                 emit_event(
                     event_sink,
                     build_event(
@@ -101,10 +103,9 @@ class Agent:
                         step=step,
                         span_id=step_span_id,
                         parent_span_id=run_span_id,
-                        data={"input_messages_count": len(self.memory.get_conversation())},
+                        data={"input_messages_count": len(conversation)},
                     ),
                 )
-                conversation = self.memory.get_conversation()
                 model_span_id = span_id_factory()
                 emit_event(
                     event_sink,
@@ -117,7 +118,7 @@ class Agent:
                         parent_span_id=step_span_id,
                         data={
                             "message_count": len(conversation),
-                            "tool_count": len(list(self.tools.iter_tools())),
+                            "tool_count": tool_count,
                         },
                     ),
                 )
@@ -142,7 +143,25 @@ class Agent:
                         type=AgentEventType.LLM_RESPONSE, content=raw_output, step=step
                     )
                 )
-                parsed = parse_output(raw_output)
+                try:
+                    parsed = parse_output(raw_output)
+                except Exception:
+                    emit_event(
+                        event_sink,
+                        build_event(
+                            name="agent.output.parsed",
+                            time_ms=clock(),
+                            run_id=run_id,
+                            step=step,
+                            span_id=model_span_id,
+                            parent_span_id=step_span_id,
+                            data={
+                                "parsed_type": "invalid",
+                                "is_valid": False,
+                            },
+                        ),
+                    )
+                    raise
                 parsed_type, is_valid, output_metadata = _classify_output(
                     raw_output, parsed
                 )
@@ -271,7 +290,7 @@ class Agent:
                             step=step,
                             span_id=run_span_id,
                             parent_span_id=None,
-                            data={"steps_used": step, "status": "ok"},
+                            data={"steps_used": step, "outcome": "final"},
                         ),
                     )
                     return AgentResponse(
@@ -309,7 +328,7 @@ class Agent:
                     step=self.max_steps,
                     span_id=run_span_id,
                     parent_span_id=None,
-                    data={"steps_used": self.max_steps, "status": "ok"},
+                    data={"steps_used": self.max_steps, "outcome": "max_steps"},
                 ),
             )
             return AgentResponse(
