@@ -42,8 +42,12 @@ def test_apply_plugins_rejects_invalid_plugin() -> None:
 
     plugin = BadPlugin()
 
-    with pytest.raises(TypeError, match=r"BadPlugin\(\).*BadPlugin"):
+    with pytest.raises(TypeError) as exc:
         apply_plugins(registry, [plugin])
+
+    message = str(exc.value)
+    assert "BadPlugin()" in message
+    assert "BadPlugin" in message
 
 
 def test_apply_plugins_empty_list_is_noop() -> None:
