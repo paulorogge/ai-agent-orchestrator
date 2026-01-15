@@ -8,7 +8,7 @@ import typer
 
 from ai_agent_orchestrator.tools.builtin.echo_tool import EchoTool
 from ai_agent_orchestrator.tools.builtin.math_tool import MathAddTool
-from ai_agent_orchestrator.tools.registry import ToolRegistry
+from ai_agent_orchestrator.tools import ToolRegistry
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -23,8 +23,7 @@ def _build_default_registry() -> ToolRegistry:
 
 
 def _iter_registered_tools(registry: ToolRegistry) -> Iterable[tuple[str, str]]:
-    tools = registry._tools
-    return ((tool.name, tool.description) for tool in tools.values())
+    return ((tool.name, tool.description) for tool in registry.iter_tools())
 
 
 @app.command("run-example")

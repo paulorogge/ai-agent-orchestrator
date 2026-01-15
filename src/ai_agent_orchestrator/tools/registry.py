@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Iterable
 
 from ai_agent_orchestrator.tools.base import Tool
 from ai_agent_orchestrator.utils.errors import ToolExecutionError, ToolNotFoundError
@@ -14,6 +14,10 @@ class ToolRegistry:
 
     def register(self, tool: Tool[Any]) -> None:
         self._tools[tool.name] = tool
+
+    def iter_tools(self) -> Iterable[Tool[Any]]:
+        """Return registered tools for read-only inspection (e.g., CLI)."""
+        return self._tools.values()
 
     def get(self, name: str) -> Tool[Any]:
         if name not in self._tools:
