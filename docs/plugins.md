@@ -27,6 +27,8 @@ dynamic loading in the core library. The host code imports the plugin and calls 
 
 ## Minimal pseudo-code example
 
+See examples/plugins/basic_plugins.py for a runnable example.
+
 ```python
 from ai_agent_orchestrator.tools import ToolRegistry
 # from my_app.plugins import my_plugin
