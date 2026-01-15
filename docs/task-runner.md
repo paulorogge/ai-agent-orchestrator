@@ -1,7 +1,8 @@
 # LM Studio Task Runner (ai-agent-orchestrator-lmstudio-task-runner)
 
 This repository ships a task runner CLI that uses a real LLM via the LM Studio
-OpenAI-compatible server.
+OpenAI-compatible server. The core orchestration library remains
+provider-agnostic; LM Studio is an optional adapter.
 
 ## Install
 
@@ -45,3 +46,12 @@ task-runner "Add a high priority task to draft the launch email."
 ```bash
 task-runner "List my current tasks."
 ```
+
+## Protocol behavior
+
+The task runner uses the same JSON protocol as the core agent loop. Tool calls
+and final responses must be JSON objects with `type: "tool_call"` or
+`type: "final"`. Non-JSON outputs are treated as final responses, and the client
+may retry once with a protocol reminder if the model output is non-compliant.
+Multi-step tasks are supported, including repeated tool usage within a single
+instruction, and `max_steps` prevents infinite loops.

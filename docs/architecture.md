@@ -1,16 +1,16 @@
 # Architecture
 
-## Componentes
+## Components
 
-- **Agent**: loop de execução, histórico de conversas e coordenação de ferramentas.
-- **LLMClient**: interface abstrata para geração de respostas.
-- **FakeLLM**: implementação determinística para ambientes offline.
-- **ToolRegistry**: registro e execução de ferramentas.
-- **Memory**: abstração de armazenamento de mensagens.
-- **Router**: seleção de agentes por regras simples.
-- **Protocol**: modelos de mensagens e saída estruturada.
+- **Agent**: Execution loop, conversation history, and tool coordination.
+- **LLMClient**: Abstract interface for generating responses.
+- **FakeLLM**: Deterministic implementation for offline environments.
+- **ToolRegistry**: Tool registration and execution.
+- **Memory**: Message storage abstraction (default: in-memory list).
+- **Router**: Agent selection via simple rules.
+- **Protocol**: Structured message models and JSON outputs.
 
-## Fluxo principal
+## Core flow
 
 ```
 +---------+       +-----------+       +-------------+       +-----------+
@@ -24,8 +24,18 @@
                   +---------+
 ```
 
-1. Usuário envia mensagem.
-2. Agent adiciona a mensagem à memória.
-3. LLMClient gera uma resposta estruturada.
-4. Agent interpreta o output e executa ferramentas quando necessário.
-5. Agent retorna uma resposta final com eventos intermediários.
+1. User sends a message.
+2. Agent appends the message to memory.
+3. LLMClient generates a structured JSON response.
+4. Agent interprets the output and executes tools as needed.
+5. Agent returns a final response after tool calls complete or `max_steps` is
+   reached. Repeating the same tool within a single instruction is allowed when
+   required by the task.
+
+## Memory behavior
+
+Memory exists to abstract conversation history storage and allow future adapters.
+Today, `InMemoryMemory` stores messages in a simple in-memory list and returns a
+copy of that list. There is no persistence, summarization, or pruning, and each
+CLI run starts with a fresh memory instance unless the application reuses one.
+It is not a vector store, not long-term knowledge, and not cross-run storage.
