@@ -50,7 +50,7 @@ pip install -e ".[dev,lmstudio]"
 - **Tools**: Typed inputs via Pydantic; tools return string outputs.
 - **ToolRegistry**: Registers tools and validates inputs before execution.
 - **Router**: Simple rule-based routing between agents.
-- **Memory**: Pluggable conversation storage (default: in-memory).
+- **Memory**: Pluggable conversation storage (default: in-memory buffer).
 - **Protocol**: JSON outputs with `tool_call` and `final` message types.
 
 ## Structured output protocol
@@ -77,11 +77,12 @@ Final:
 }
 ```
 
-Tool calls and final responses must follow this protocol. The agent enforces the
-protocol by only acting on valid `tool_call` or `final` objects; anything else
-is treated as a plain final response and does not trigger tool execution. When
-using LM Studio, the task runner may issue a corrective retry if the model
-returns non-compliant output.
+Tool calls and final responses must follow this minimal JSON protocol. The
+agent only acts on valid `tool_call` or `final` objects; anything else (including
+non-JSON or invalid JSON) is treated as a plain final response and does not
+trigger tool execution. When using LM Studio, the task runner may issue a
+single corrective retry if the model violates the protocol (this retry is not
+guaranteed or recursive).
 
 ## Quickstart (library)
 
@@ -116,6 +117,14 @@ runner the agent can add a task and then list tasks before responding:
 1. `{"type":"tool_call","tool_name":"tasks.add","args":{"title":"Draft launch email","notes":"Add outline","priority":"high"}}`
 2. `{"type":"tool_call","tool_name":"tasks.list","args":{}}`
 3. `{"type":"final","content":"Added the task and listed current tasks."}`
+
+## Memory model
+
+The current `Memory` implementation is a simple conversation buffer. It stores
+messages in-order and returns the full conversation to the agent. It does not
+summarize, prune, persist, or reason over history. This is an intentional design
+choice to keep separation of concerns, deterministic behavior, testability, and
+future extensibility.
 
 ## CLI examples
 
