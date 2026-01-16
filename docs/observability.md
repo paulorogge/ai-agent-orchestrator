@@ -4,6 +4,27 @@ The agent loop can emit a small, stable set of structured events. You provide a 
 those events (for logging, tests, or custom exporters). No backends or exporters are built in.
 Events are emitted only when an event_sink is provided.
 
+## Event systems
+
+There are two event systems, each with a different audience and payload shape:
+
+1. **AgentResponse.events (user-facing trace)**: `Agent.run()` returns an
+   `AgentResponse` that includes a list of `AgentEvent` entries. These are meant
+   to make it easy to understand the logical flow of the run (model response,
+   tool call, tool result, final output) and can include content or tool
+   arguments for debugging.
+2. **Observability event_sink events (structured envelope)**: When you pass an
+   `event_sink`, the agent emits a stable, JSON-safe envelope with timing,
+   run/step/span IDs, and minimal metadata. This is the preferred shape for
+   logging, tracing, and tests.
+
+### Which one should I use?
+
+- Use **AgentResponse.events** when you want a lightweight, user-facing trace of
+  what the agent did and you are already inspecting the returned response.
+- Use **event_sink events** when you need structured, redaction-friendly
+  telemetry for tests, logs, or external tracing systems.
+
 ## Event envelope
 
 Each event is JSON-safe and follows this envelope:
@@ -68,6 +89,13 @@ and tool results are **not** emitted by default.
   - `outcome: "final" | "max_steps"`
 - `agent.run.failed`
   - `error_type: str`
+
+## Memory (current behavior)
+
+`InMemoryMemory` stores conversation messages for the duration of a single
+process run. It is ephemeral, has no persistence, and exists to supply
+conversation context back to the LLM client. Persistent memory adapters are not
+implemented yet; they are a roadmap item.
 
 ## Hook locations
 

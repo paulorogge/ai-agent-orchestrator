@@ -100,6 +100,47 @@ def test_event_sequence_tool_then_final() -> None:
     ]
 
 
+def test_event_payload_fields_for_key_events() -> None:
+    tool_call = ToolCallOutput(
+        type="tool_call",
+        tool_name="math.add",
+        args={"a": 3, "b": 4},
+    ).model_dump_json()
+    final = FinalOutput(type="final", content="Done").model_dump_json()
+
+    llm = FakeLLM([tool_call, final])
+    tools = ToolRegistry()
+    tools.register(MathAddTool())
+    memory = InMemoryMemory()
+    sink = ListEventSink()
+
+    agent = Agent(llm=llm, tools=tools, memory=memory)
+    agent.run("Add numbers", event_sink=sink)
+
+    run_started = next(
+        event for event in sink.events if event.name == "agent.run.started"
+    )
+    assert run_started.data["max_steps"] == agent.max_steps
+
+    step_started = [
+        event for event in sink.events if event.name == "agent.step.started"
+    ]
+    assert step_started[0].data["input_messages_count"] == 1
+    assert step_started[1].data["input_messages_count"] == 2
+
+    model_responded = [
+        event for event in sink.events if event.name == "agent.model.responded"
+    ]
+    assert model_responded[0].data["raw_length"] == len(tool_call)
+    assert model_responded[1].data["raw_length"] == len(final)
+
+    run_finished = next(
+        event for event in sink.events if event.name == "agent.run.finished"
+    )
+    assert run_finished.data["steps_used"] == 2
+    assert run_finished.data["outcome"] == "final"
+
+
 def test_event_determinism() -> None:
     tool_call = ToolCallOutput(
         type="tool_call",
@@ -197,8 +238,20 @@ def test_tool_error_emits_run_failed_and_tool_finished() -> None:
     assert tool_finished[-1].data["status"] == "error"
     assert tool_finished[-1].data["error_type"] == excinfo.value.__class__.__name__
 
+    step_finished = [
+        event
+        for event in sink.events
+        if event.name == "agent.step.finished" and event.data["outcome"] == "error"
+    ]
+    assert len(step_finished) == 1
+
     run_failed = [
         event for event in sink.events if event.name == "agent.run.failed"
     ]
     assert run_failed
     assert run_failed[-1].data["error_type"] == excinfo.value.__class__.__name__
+
+    tool_finished_index = sink.events.index(tool_finished[-1])
+    step_finished_index = sink.events.index(step_finished[0])
+    run_failed_index = sink.events.index(run_failed[-1])
+    assert tool_finished_index < step_finished_index < run_failed_index
