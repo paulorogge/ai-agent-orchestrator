@@ -169,6 +169,12 @@ enforces the same JSON protocol and uses the core agent loop with tool calls.
 pytest
 ```
 
+If you need annotated tags locally or in CI for release automation, run:
+
+```bash
+git fetch --tags
+```
+
 ## Docs
 
 - [Overview](docs/overview.md)
