@@ -11,9 +11,11 @@ def test_plugin_example_smoke() -> None:
     env = os.environ.copy()
     existing_pythonpath = env.get("PYTHONPATH", "")
     repo_pythonpath = str(repo_root / "src")
-    env["PYTHONPATH"] = (
-        f"{repo_pythonpath}{os.pathsep}{existing_pythonpath}" if existing_pythonpath else repo_pythonpath
-    )
+    if existing_pythonpath:
+        env["PYTHONPATH"] = f"{repo_pythonpath}{os.pathsep}{existing_pythonpath}"
+    else:
+        env["PYTHONPATH"] = repo_pythonpath
+
     result = subprocess.run(
         [sys.executable, str(script_path)],
         env=env,
