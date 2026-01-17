@@ -1,13 +1,24 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 
 def test_plugin_example_smoke() -> None:
-    script_path = Path(__file__).resolve().parents[1] / "examples" / "plugins" / "basic_plugins.py"
+    repo_root = Path(__file__).resolve().parents[1]
+    script_path = repo_root / "examples" / "plugins" / "basic_plugins.py"
+
+    env = os.environ.copy()
+    existing_pythonpath = env.get("PYTHONPATH", "")
+    repo_pythonpath = str(repo_root / "src")
+    if existing_pythonpath:
+        env["PYTHONPATH"] = f"{repo_pythonpath}{os.pathsep}{existing_pythonpath}"
+    else:
+        env["PYTHONPATH"] = repo_pythonpath
 
     result = subprocess.run(
         [sys.executable, str(script_path)],
+        env=env,
         capture_output=True,
         text=True,
         check=False,
