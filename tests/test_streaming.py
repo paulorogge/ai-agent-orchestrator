@@ -48,29 +48,28 @@ def test_agent_streaming_matches_non_streaming() -> None:
     memory = InMemoryMemory()
     agent = Agent(llm=llm, tools=tools, memory=memory)
 
-    async def collect() -> tuple[str, str | None, int]:
+    async def collect() -> tuple[str, list[str], int]:
         streamed_text = ""
-        final_text = None
+        chunks_seen: list[str] = []
         final_count = 0
         async for chunk in agent.stream_async("Hi"):
+            streamed_text += chunk.text
+            chunks_seen.append(chunk.text)
             if chunk.is_final:
-                final_text = chunk.text
                 final_count += 1
-            else:
-                streamed_text += chunk.text
-        return streamed_text, final_text, final_count
+        return streamed_text, chunks_seen, final_count
 
-    streamed_text, final_text, final_count = asyncio.run(collect())
+    streamed_text, chunks_seen, final_count = asyncio.run(collect())
 
-    assert streamed_text == output
-    assert final_text == "Hello"
+    assert streamed_text == "Hello"
+    assert "".join(chunks_seen) == "Hello"
     assert final_count == 1
 
     llm_sync = FakeStreamingLLM(output, chunks)
     agent_sync = Agent(llm=llm_sync, tools=tools, memory=InMemoryMemory())
     response = asyncio.run(agent_sync.run_async("Hi"))
 
-    assert response.content == "Hello"
+    assert response.content == streamed_text
 
 
 def test_streaming_plain_text_fallbacks_to_final_plain() -> None:
@@ -82,29 +81,25 @@ def test_streaming_plain_text_fallbacks_to_final_plain() -> None:
     memory = InMemoryMemory()
     agent = Agent(llm=llm, tools=tools, memory=memory)
 
-    async def collect() -> tuple[str, str | None, int]:
+    async def collect() -> tuple[str, int]:
         streamed_text = ""
-        final_text = None
         final_count = 0
         async for chunk in agent.stream_async("Oi"):
+            streamed_text += chunk.text
             if chunk.is_final:
-                final_text = chunk.text
                 final_count += 1
-            else:
-                streamed_text += chunk.text
-        return streamed_text, final_text, final_count
+        return streamed_text, final_count
 
-    streamed_text, final_text, final_count = asyncio.run(collect())
+    streamed_text, final_count = asyncio.run(collect())
 
     assert streamed_text == output
-    assert final_text == output
     assert final_count == 1
 
     llm_sync = FakeStreamingLLM(output, chunks)
     agent_sync = Agent(llm=llm_sync, tools=tools, memory=InMemoryMemory())
     response = asyncio.run(agent_sync.run_async("Oi"))
 
-    assert response.content == output
+    assert response.content == streamed_text
 
 
 def test_streaming_tool_call_executes_after_full_buffer() -> None:
@@ -123,20 +118,30 @@ def test_streaming_tool_call_executes_after_full_buffer() -> None:
     sink = ListEventSink()
     agent = Agent(llm=llm, tools=tools, memory=memory, max_steps=1)
 
-    async def consume() -> list[str]:
-        stream = agent.stream_async("Hi", event_sink=sink)
-        first_chunk = await stream.__anext__()
-        assert first_chunk.text == chunks[0]
-        assert not any(
-            event.name == "agent.tool.started" for event in sink.events
-        )
-        remaining = [chunk.text async for chunk in stream]
-        return [first_chunk.text, *remaining]
+    async def consume() -> tuple[str, int]:
+        streamed_text = ""
+        final_count = 0
+        async for chunk in agent.stream_async("Hi", event_sink=sink):
+            streamed_text += chunk.text
+            if chunk.is_final:
+                final_count += 1
+        return streamed_text, final_count
 
-    streamed = asyncio.run(consume())
+    streamed, final_count = asyncio.run(consume())
 
-    assert "".join(streamed[:-1]) == tool_call
+    assert tool_call not in streamed
+    assert streamed == "Max steps reached without final response."
+    assert final_count == 1
     assert echo_tool.calls == ["ok"]
     names = [event.name for event in sink.events]
     assert "agent.tool.started" in names
     assert names.index("agent.model.responded") < names.index("agent.tool.started")
+
+    llm_sync = FakeStreamingLLM(tool_call, chunks)
+    tools_sync = ToolRegistry()
+    tools_sync.register(EchoTool())
+    agent_sync = Agent(
+        llm=llm_sync, tools=tools_sync, memory=InMemoryMemory(), max_steps=1
+    )
+    response = asyncio.run(agent_sync.run_async("Hi"))
+    assert response.content == streamed
