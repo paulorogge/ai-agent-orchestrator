@@ -5,7 +5,7 @@ import inspect
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, AsyncIterator, List, Mapping, cast
+from typing import Any, AsyncIterator, Iterable, List, Mapping, cast
 
 from ai_agent_orchestrator.llm import (
     LLMClientProtocol,
@@ -700,6 +700,7 @@ class Agent:
         run_id = run_id_factory()
         run_span_id = span_id_factory()
         tool_count = len(list(self.tools.iter_tools()))
+        stream_chunk_size = 64
         step_span_id = run_span_id
         current_step = 0
         step_finished_emitted = False
@@ -763,7 +764,6 @@ class Agent:
                     async for chunk in stream_response:
                         chunk_text = _read_chunk_text(chunk)
                         raw_output += chunk_text
-                        yield StreamChunk(text=chunk_text, step=step, is_final=False)
                 else:
                     async_llm = cast(SupportsAsyncGenerate, self.llm)
                     if inspect.iscoroutinefunction(async_llm.generate):
@@ -949,7 +949,12 @@ class Agent:
                             data={"steps_used": step, "outcome": "final"},
                         ),
                     )
-                    yield StreamChunk(text=parsed.content, step=step, is_final=True)
+                    chunks = list(_chunk_text(parsed.content, stream_chunk_size))
+                    for index, chunk_text in enumerate(chunks):
+                        is_final = index == len(chunks) - 1
+                        yield StreamChunk(
+                            text=chunk_text, step=step, is_final=is_final
+                        )
                     return
 
             fallback = "Max steps reached without final response."
@@ -986,7 +991,10 @@ class Agent:
                     data={"steps_used": self.max_steps, "outcome": "max_steps"},
                 ),
             )
-            yield StreamChunk(text=fallback, step=self.max_steps, is_final=True)
+            chunks = list(_chunk_text(fallback, stream_chunk_size))
+            for index, chunk_text in enumerate(chunks):
+                is_final = index == len(chunks) - 1
+                yield StreamChunk(text=chunk_text, step=self.max_steps, is_final=is_final)
         except Exception as exc:
             if current_step and not step_finished_emitted:
                 emit_event(
@@ -1024,6 +1032,14 @@ def _read_chunk_text(chunk: Any) -> str:
     if hasattr(chunk, "content"):
         return str(chunk.content)
     return str(chunk)
+
+
+def _chunk_text(text: str, chunk_size: int) -> Iterable[str]:
+    if text == "":
+        yield ""
+        return
+    for start in range(0, len(text), chunk_size):
+        yield text[start : start + chunk_size]
 
 
 def _classify_output(
