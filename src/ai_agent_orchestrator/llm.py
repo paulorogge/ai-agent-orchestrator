@@ -53,13 +53,34 @@ async def async_generate_via_thread(
 class FakeLLM(LLMClient):
     """Deterministic LLM for offline demos and tests."""
 
-    def __init__(self, responses: Sequence[str] | None = None) -> None:
+    def __init__(
+        self, responses: Sequence[str] | None = None, chunk_size: int | None = None
+    ) -> None:
         self._responses: Deque[str] = deque(responses or [])
+        self._chunk_size = chunk_size
 
     def push(self, response: str) -> None:
         self._responses.append(response)
 
     def generate(self, conversation: Sequence[Message]) -> str:
+        return self._next_response(conversation)
+
+    async def stream(
+        self, conversation: Sequence[Message]
+    ) -> AsyncIterator[LLMStreamChunk]:
+        response = self._next_response(conversation)
+        chunk_size = self._chunk_size
+        if chunk_size is None:
+            yield LLMStreamChunk(content=response, is_final=True)
+            return
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be a positive integer.")
+        for offset in range(0, len(response), chunk_size):
+            chunk = response[offset : offset + chunk_size]
+            is_final = offset + chunk_size >= len(response)
+            yield LLMStreamChunk(content=chunk, is_final=is_final)
+
+    def _next_response(self, conversation: Sequence[Message]) -> str:
         if self._responses:
             return self._responses.popleft()
 
