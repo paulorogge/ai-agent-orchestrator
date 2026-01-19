@@ -68,13 +68,13 @@ class FakeLLM(LLMClient):
     async def stream(
         self, conversation: Sequence[Message]
     ) -> AsyncIterator[LLMStreamChunk]:
-        response = self._next_response(conversation)
         chunk_size = self._chunk_size
+        if chunk_size is not None and chunk_size <= 0:
+            raise ValueError("chunk_size must be a positive integer or None.")
+        response = self._next_response(conversation)
         if chunk_size is None:
             yield LLMStreamChunk(content=response, is_final=True)
             return
-        if chunk_size <= 0:
-            raise ValueError("chunk_size must be a positive integer.")
         for offset in range(0, len(response), chunk_size):
             chunk = response[offset : offset + chunk_size]
             is_final = offset + chunk_size >= len(response)
