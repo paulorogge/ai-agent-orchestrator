@@ -1,8 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+- _TBD_
 
-## [0.4.0]
+## [0.4.0] - 2026-01-19
 ### Added
 - Agent.run_async.
 - Streaming entrypoint with compatibility notes: protocol unchanged, sync tools compatible,
