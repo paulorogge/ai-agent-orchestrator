@@ -3,7 +3,7 @@
 ## Components
 
 - **Agent**: Execution loop, conversation history, and tool coordination.
-- **LLMClient**: Abstract interface for generating responses.
+- **LLMClient**: Abstract synchronous interface for generating responses (async adapters are additive).
 - **FakeLLM**: Deterministic implementation for offline environments.
 - **ToolRegistry**: Tool registration and execution.
 - **Memory**: Message storage abstraction (default: in-memory list).

@@ -1,20 +1,51 @@
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from collections import deque
-from typing import Deque, Sequence
+from dataclasses import dataclass
+from typing import AsyncIterator, Deque, Protocol, Sequence
 
 from ai_agent_orchestrator.protocol.messages import Message
 from ai_agent_orchestrator.protocol.outputs import FinalOutput
 
 
 class LLMClient(ABC):
-    """Abstract LLM client interface."""
+    """Abstract synchronous LLM client interface."""
 
     @abstractmethod
     def generate(self, conversation: Sequence[Message]) -> str:
         """Generate a response from a conversation."""
         raise NotImplementedError
+
+
+class AsyncLLMClient(Protocol):
+    """Async-compatible LLM client interface."""
+
+    async def generate(self, conversation: Sequence[Message]) -> str:
+        """Generate a response from a conversation asynchronously."""
+
+
+@dataclass(frozen=True)
+class StreamChunk:
+    """A streaming chunk of model output."""
+
+    content: str
+    is_final: bool = False
+
+
+class LLMStreamClient(Protocol):
+    """Streaming-capable LLM interface."""
+
+    async def stream(self, conversation: Sequence[Message]) -> AsyncIterator[StreamChunk]:
+        """Yield streaming chunks for a conversation."""
+
+
+async def async_generate_via_thread(
+    llm: LLMClient, conversation: Sequence[Message]
+) -> str:
+    """Run a sync LLMClient.generate in a thread for async callers."""
+    return await asyncio.to_thread(llm.generate, conversation)
 
 
 class FakeLLM(LLMClient):

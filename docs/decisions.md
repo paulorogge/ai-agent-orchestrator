@@ -7,8 +7,9 @@
      server runtime.
 
 2. **Provider-agnostic LLM boundary**
-   - `LLMClient` is the only required integration point; LM Studio is an
-     optional adapter via an OpenAI-compatible API for the task runner.
+   - `LLMClient` is the only required integration point; async interfaces are
+     optional and additive. LM Studio is an optional adapter via an
+     OpenAI-compatible API for the task runner.
 
 3. **Deterministic `FakeLLM` for offline repeatability**
    - Local, predictable execution is prioritized for tests, demos, and
