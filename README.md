@@ -109,6 +109,22 @@ Notes:
 - The agent stops after `max_steps` tool iterations and returns a fallback message.
   Infinite loops are prevented via `max_steps`, not by restricting tool usage.
 
+## Async + streaming (optional)
+
+The core loop remains synchronous, but `Agent.run_async` provides an async-compatible
+entrypoint that preserves the same tool-call protocol and behavior as `run`. If the
+LLM client already exposes an async `generate`, it is awaited directly; otherwise the
+sync client is executed in a worker thread for compatibility. Async support is
+additive and optional: you can keep using `run` with the same protocol semantics.
+
+Streaming is also optional via `LLMStreamClient` and the stable `StreamChunk` shape.
+It does not change the JSON protocol or the agent loop; it is an opt-in interface
+for providers that implement streaming. See [docs/streaming.md](docs/streaming.md)
+for the chunk schema and usage examples.
+
+Non-goals remain unchanged: there is no persistent memory and no restriction on
+tool usage beyond `max_steps`.
+
 ## Multi-step example
 
 A single instruction can require multiple tool calls. For example, in the task
@@ -163,6 +179,8 @@ orchestrator remains provider-agnostic via the synchronous `LLMClient` interface
 with additive async adapters when needed. See
 [docs/task-runner.md](docs/task-runner.md) for setup details. The task runner
 enforces the same JSON protocol and uses the core agent loop with tool calls.
+LM Studio support is sync-only unless explicit async or streaming support is
+implemented in `src/task_runner_app/llm.py`.
 
 ## Testing
 
@@ -184,3 +202,4 @@ git fetch --tags
 - [Observability](docs/observability.md)
 - [Plugins](docs/plugins.md)
 - [Roadmap](docs/roadmap.md)
+- [Streaming](docs/streaming.md)

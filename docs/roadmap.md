@@ -26,8 +26,10 @@
 - Minimal scope: optional streaming interface for incremental model output.
 - Non-goal: reworking all tools to be async-first or adding new streaming protocols.
 - Non-goal: guaranteeing streaming support across all LLM providers.
+- Non-goal: adding persistent memory or restricting tool usage beyond `max_steps`.
 - Acceptance: async loop passes existing tests (or equivalent async variants) without behavior drift.
-- Acceptance: streaming path emits incremental chunks in a documented, stable shape.
+- Acceptance: streaming path emits incremental chunks in a documented, stable shape
+  (see `docs/streaming.md`).
 
 ### v0.5.x+ Persistent memory adapters exploration (tentative)
 - Minimal scope: outline a thin adapter interface for persistence experiments.
