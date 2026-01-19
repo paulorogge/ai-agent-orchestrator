@@ -10,6 +10,14 @@ from ai_agent_orchestrator.protocol.messages import Message
 from ai_agent_orchestrator.protocol.outputs import FinalOutput
 
 
+@dataclass(frozen=True)
+class LLMStreamChunk:
+    """A streaming chunk of model output."""
+
+    content: str
+    is_final: bool = False
+
+
 class LLMClient(ABC):
     """Abstract synchronous LLM client interface."""
 
@@ -26,18 +34,12 @@ class AsyncLLMClient(Protocol):
         """Generate a response from a conversation asynchronously."""
 
 
-@dataclass(frozen=True)
-class StreamChunk:
-    """A streaming chunk of model output."""
-
-    content: str
-    is_final: bool = False
-
-
 class LLMStreamClient(Protocol):
     """Streaming-capable LLM interface."""
 
-    async def stream(self, conversation: Sequence[Message]) -> AsyncIterator[StreamChunk]:
+    async def stream(
+        self, conversation: Sequence[Message]
+    ) -> AsyncIterator[LLMStreamChunk]:
         """Yield streaming chunks for a conversation."""
 
 

@@ -1,62 +1,46 @@
 # Streaming
 
-Streaming is an optional, additive capability. It does not change the core JSON
-protocol, tool-calling semantics, or sync behavior. If you never implement or
-consume streaming, the agent loop and `Agent.run` / `Agent.run_async` remain
-unchanged.
+The agent supports streaming model output via `Agent.stream_async(...)`. This async generator
+lets you render incremental output while the agent buffers the full model response for
+protocol parsing and tool execution.
 
-## Stable chunk shape
+## StreamChunk shape
 
-Streaming-capable providers implement `LLMStreamClient.stream` and yield
-`StreamChunk` values with a stable, documented shape:
+`Agent.stream_async(...)` yields `StreamChunk` values with a stable shape:
 
 ```python
-@dataclass(frozen=True)
-class StreamChunk:
-    content: str
-    is_final: bool = False
+from ai_agent_orchestrator.streaming import StreamChunk
+
+StreamChunk(
+    text="partial text",
+    step=1,
+    is_final=False,
+)
 ```
 
-- `content` is incremental text output.
-- `is_final` indicates the end of the stream; providers may set it to `True` on
-  the last chunk.
+Fields:
 
-This schema is stable and intended to be shared across adapters.
+- `text`: the raw incremental model text for the current step.
+- `step`: the agent step that produced the chunk.
+- `is_final`: `True` only when the agent has produced a final response (or the max-steps
+  fallback). The final chunk's `text` contains the final response content.
 
-## Usage example
+## Usage
 
 ```python
-from collections.abc import AsyncIterator
+from ai_agent_orchestrator.agent import Agent
 
-from ai_agent_orchestrator.llm import LLMStreamClient, StreamChunk
-from ai_agent_orchestrator.protocol.messages import Message
-
-
-class MyStreamingClient(LLMStreamClient):
-    async def stream(self, conversation: list[Message]) -> AsyncIterator[StreamChunk]:
-        yield StreamChunk(content="Hello ")
-        yield StreamChunk(content="world", is_final=True)
+async def stream(agent: Agent, prompt: str) -> str:
+    full_text = ""
+    async for chunk in agent.stream_async(prompt):
+        if chunk.is_final:
+            return chunk.text
+        full_text += chunk.text
+    return full_text
 ```
 
-Consumers can iterate over the stream:
+## Protocol safety
 
-```python
-async for chunk in client.stream(conversation):
-    print(chunk.content, end="")
-    if chunk.is_final:
-        break
-```
-
-## Compatibility notes
-
-- Async and streaming are optional. The synchronous `LLMClient` contract and
-  `Agent.run` remain the default entrypoint.
-- The JSON protocol is unchanged: streaming does not add new message types.
-- LM Studio integration is sync-only unless explicit async or streaming support
-  is implemented in `src/task_runner_app/llm.py`.
-
-## Non-goals
-
-- No persistent memory. The in-memory buffer remains the default storage model.
-- No tool restrictions beyond `max_steps`. Tools remain callable multiple times
-  within a single run.
+Streaming is incremental, but tool calls are still executed only after the full model
+response is buffered and parsed. This preserves the existing tool-call protocol and ensures
+that tools never run on partial output.
