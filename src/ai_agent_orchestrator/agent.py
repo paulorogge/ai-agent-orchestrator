@@ -44,7 +44,7 @@ class AgentResponse:
 
 
 class Agent:
-    """Orchestrates a conversation loop with tool calls."""
+    """Orchestrates a conversation loop with tool calls using a sync LLMClient."""
 
     def __init__(
         self,

@@ -22,7 +22,7 @@ for offline runs, plus an optional LM Studio-powered task runner CLI.
 ## Design goals
 
 - Clean Architecture and SOLID-friendly components.
-- Provider-agnostic LLM interface (`LLMClient`).
+- Provider-agnostic LLM interface (`LLMClient`) with optional async adapters.
 - Structured outputs with a minimal JSON protocol.
 - Testability, deterministic execution, and clear error boundaries.
 
@@ -159,7 +159,8 @@ Required environment variables:
 - `WORKSPACE_DIR` (optional, workspace path for task runner tools)
 
 The task runner calls LM Studio through its OpenAI-compatible API, but the core
-orchestrator remains provider-agnostic via the `LLMClient` interface. See
+orchestrator remains provider-agnostic via the synchronous `LLMClient` interface
+with additive async adapters when needed. See
 [docs/task-runner.md](docs/task-runner.md) for setup details. The task runner
 enforces the same JSON protocol and uses the core agent loop with tool calls.
 
