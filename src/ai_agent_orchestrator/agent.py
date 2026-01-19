@@ -5,9 +5,15 @@ import inspect
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, AsyncIterator, List, Mapping
+from typing import Any, AsyncIterator, List, Mapping, cast
 
-from ai_agent_orchestrator.llm import LLMClient, async_generate_via_thread
+from ai_agent_orchestrator.llm import (
+    LLMClientProtocol,
+    SupportsAsyncGenerate,
+    SupportsAsyncStream,
+    SupportsSyncGenerate,
+    async_generate_via_thread,
+)
 from ai_agent_orchestrator.memory.base import Memory
 from ai_agent_orchestrator.observability.clock import Clock, system_clock_ms
 from ai_agent_orchestrator.observability.events import EventSink, build_event, emit_event
@@ -47,11 +53,11 @@ class AgentResponse:
 
 
 class Agent:
-    """Orchestrates a conversation loop with tool calls using a sync LLMClient."""
+    """Orchestrates a conversation loop with tool calls using sync/async LLMs."""
 
     def __init__(
         self,
-        llm: LLMClient,
+        llm: LLMClientProtocol,
         tools: ToolRegistry,
         memory: Memory,
         max_steps: int = 5,
@@ -125,7 +131,8 @@ class Agent:
                         },
                     ),
                 )
-                raw_output = self.llm.generate(conversation)
+                sync_llm = cast(SupportsSyncGenerate, self.llm)
+                raw_output = sync_llm.generate(conversation)
                 emit_event(
                     event_sink,
                     build_event(
@@ -429,11 +436,13 @@ class Agent:
                         },
                     ),
                 )
-                if inspect.iscoroutinefunction(self.llm.generate):
-                    raw_output = await self.llm.generate(conversation)
+                async_llm = cast(SupportsAsyncGenerate, self.llm)
+                if inspect.iscoroutinefunction(async_llm.generate):
+                    raw_output = await async_llm.generate(conversation)
                 else:
+                    sync_llm = cast(SupportsSyncGenerate, self.llm)
                     raw_output = await async_generate_via_thread(
-                        self.llm, conversation
+                        sync_llm, conversation
                     )
                 emit_event(
                     event_sink,
@@ -745,7 +754,8 @@ class Agent:
 
                 raw_output = ""
                 if hasattr(self.llm, "stream"):
-                    stream_response = self.llm.stream(conversation)
+                    stream_llm = cast(SupportsAsyncStream, self.llm)
+                    stream_response = stream_llm.stream(conversation)
                     if not hasattr(stream_response, "__aiter__"):
                         raise TypeError(
                             "Streaming requires an async stream method on the LLM client."
@@ -754,12 +764,14 @@ class Agent:
                         chunk_text = _read_chunk_text(chunk)
                         raw_output += chunk_text
                         yield StreamChunk(text=chunk_text, step=step, is_final=False)
-                elif inspect.iscoroutinefunction(self.llm.generate):
-                    raw_output = await self.llm.generate(conversation)
                 else:
-                    raw_output = await async_generate_via_thread(
-                        self.llm, conversation
-                    )
+                    async_llm = cast(SupportsAsyncGenerate, self.llm)
+                    if inspect.iscoroutinefunction(async_llm.generate):
+                        raw_output = await async_llm.generate(conversation)
+                    else:
+                        raw_output = await async_generate_via_thread(
+                            cast(SupportsSyncGenerate, self.llm), conversation
+                        )
 
                 emit_event(
                     event_sink,

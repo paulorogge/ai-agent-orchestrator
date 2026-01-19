@@ -4,7 +4,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
-from typing import AsyncIterator, Deque, Protocol, Sequence
+from typing import AsyncIterator, Deque, Protocol, Sequence, TypeAlias
 
 from ai_agent_orchestrator.protocol.messages import Message
 from ai_agent_orchestrator.protocol.outputs import FinalOutput
@@ -18,6 +18,34 @@ class LLMStreamChunk:
     is_final: bool = False
 
 
+class SupportsSyncGenerate(Protocol):
+    """Protocol for LLMs that provide a synchronous generate method."""
+
+    def generate(self, conversation: Sequence[Message]) -> str:
+        """Generate a response from a conversation."""
+
+
+class SupportsAsyncGenerate(Protocol):
+    """Protocol for LLMs that provide an async generate method."""
+
+    async def generate(self, conversation: Sequence[Message]) -> str:
+        """Generate a response from a conversation asynchronously."""
+
+
+class SupportsAsyncStream(Protocol):
+    """Protocol for LLMs that provide an async stream method."""
+
+    async def stream(
+        self, conversation: Sequence[Message]
+    ) -> AsyncIterator[LLMStreamChunk]:
+        """Yield streaming chunks for a conversation."""
+
+
+LLMClientProtocol: TypeAlias = (
+    SupportsSyncGenerate | SupportsAsyncGenerate | SupportsAsyncStream
+)
+
+
 class LLMClient(ABC):
     """Abstract synchronous LLM client interface."""
 
@@ -27,26 +55,10 @@ class LLMClient(ABC):
         raise NotImplementedError
 
 
-class AsyncLLMClient(Protocol):
-    """Async-compatible LLM client interface."""
-
-    async def generate(self, conversation: Sequence[Message]) -> str:
-        """Generate a response from a conversation asynchronously."""
-
-
-class LLMStreamClient(Protocol):
-    """Streaming-capable LLM interface."""
-
-    async def stream(
-        self, conversation: Sequence[Message]
-    ) -> AsyncIterator[LLMStreamChunk]:
-        """Yield streaming chunks for a conversation."""
-
-
 async def async_generate_via_thread(
-    llm: LLMClient, conversation: Sequence[Message]
+    llm: SupportsSyncGenerate, conversation: Sequence[Message]
 ) -> str:
-    """Run a sync LLMClient.generate in a thread for async callers."""
+    """Run a sync generate method in a thread for async callers."""
     return await asyncio.to_thread(llm.generate, conversation)
 
 
