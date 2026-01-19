@@ -9,6 +9,8 @@ from ai_agent_orchestrator.llm import FakeLLM
 from ai_agent_orchestrator.memory.in_memory import InMemoryMemory
 from ai_agent_orchestrator.observability.events import (
     AgentEvent as ObservabilityEvent,
+)
+from ai_agent_orchestrator.observability.events import (
     ListEventSink,
 )
 from ai_agent_orchestrator.protocol.outputs import FinalOutput, ToolCallOutput
