@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.4.0]
+### Added
+- Agent.run_async.
+- Streaming entrypoint with compatibility notes: protocol unchanged, sync tools compatible,
+  memory remains non-persistent.
+
+### Non-goals
+- Protocol remains unchanged.
+- Sync tools remain compatible.
+- Memory remains non-persistent.
+
 ## [0.3.0]
 ### Added
 - Opt-in structured observability events emitted from the agent loop.
