@@ -1,9 +1,11 @@
 import asyncio
+from collections.abc import AsyncIterator, Sequence
 
 from ai_agent_orchestrator.agent import Agent
 from ai_agent_orchestrator.llm import LLMStreamChunk
 from ai_agent_orchestrator.memory.in_memory import InMemoryMemory
 from ai_agent_orchestrator.observability.events import ListEventSink
+from ai_agent_orchestrator.protocol.messages import Message
 from ai_agent_orchestrator.protocol.outputs import FinalOutput, ToolCallOutput
 from ai_agent_orchestrator.tools.base import Tool, ToolInput
 from ai_agent_orchestrator.tools.registry import ToolRegistry
@@ -14,10 +16,12 @@ class FakeStreamingLLM:
         self._output = output
         self._chunks = chunks
 
-    def generate(self, conversation: list[object]) -> str:
+    def generate(self, conversation: Sequence[Message]) -> str:
         return self._output
 
-    async def stream(self, conversation: list[object]):
+    async def stream(
+        self, conversation: Sequence[Message]
+    ) -> AsyncIterator[LLMStreamChunk]:
         for chunk in self._chunks:
             yield LLMStreamChunk(content=chunk)
 

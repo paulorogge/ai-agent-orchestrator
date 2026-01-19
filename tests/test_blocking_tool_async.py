@@ -1,7 +1,7 @@
 import asyncio
 import time
 
-from ai_agent_orchestrator.agent import Agent, AgentEventType
+from ai_agent_orchestrator.agent import Agent, AgentEvent, AgentEventType
 from ai_agent_orchestrator.llm import FakeLLM
 from ai_agent_orchestrator.memory.in_memory import InMemoryMemory
 from ai_agent_orchestrator.protocol.outputs import FinalOutput, ToolCallOutput
@@ -40,7 +40,7 @@ def _build_agent() -> Agent:
 def test_run_async_completes_with_blocking_tool() -> None:
     agent = _build_agent()
 
-    async def run_check() -> tuple[str, list[object]]:
+    async def run_check() -> tuple[str, list[AgentEvent]]:
         response = await asyncio.wait_for(agent.run_async("Hi"), timeout=1.0)
         return response.content, response.events
 
