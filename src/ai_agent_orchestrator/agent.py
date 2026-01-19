@@ -745,8 +745,7 @@ class Agent:
 
                 raw_output = ""
                 if hasattr(self.llm, "stream"):
-                    stream_method = getattr(self.llm, "stream")
-                    stream_response = stream_method(conversation)
+                    stream_response = self.llm.stream(conversation)
                     if not hasattr(stream_response, "__aiter__"):
                         raise TypeError(
                             "Streaming requires an async stream method on the LLM client."
