@@ -4,7 +4,7 @@ from typing import Callable
 
 import pytest
 
-from ai_agent_orchestrator.agent import Agent
+from ai_agent_orchestrator.agent import Agent, AgentEvent
 from ai_agent_orchestrator.llm import FakeLLM
 from ai_agent_orchestrator.memory.in_memory import InMemoryMemory
 from ai_agent_orchestrator.observability.events import (
@@ -281,7 +281,7 @@ def test_max_steps_fallback_parity_sync_async() -> None:
         args={"a": 1, "b": 2},
     ).model_dump_json()
 
-    def run_sync() -> tuple[str, list[object], list[ObservabilityEvent]]:
+    def run_sync() -> tuple[str, list[AgentEvent], list[ObservabilityEvent]]:
         llm = FakeLLM([tool_call])
         tools = ToolRegistry()
         tools.register(MathAddTool())
@@ -297,7 +297,7 @@ def test_max_steps_fallback_parity_sync_async() -> None:
         )
         return response.content, response.events, sink.events
 
-    def run_async() -> tuple[str, list[object], list[ObservabilityEvent]]:
+    def run_async() -> tuple[str, list[AgentEvent], list[ObservabilityEvent]]:
         llm = FakeLLM([tool_call])
         tools = ToolRegistry()
         tools.register(MathAddTool())
