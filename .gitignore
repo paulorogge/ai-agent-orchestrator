@@ -5,3 +5,10 @@ __pycache__/
 .ruff_cache/
 .env
 workspace/
+
+# Accidental terminal/log dumps
+git-log*.txt
+gitlog*.txt
+terminal-dump*.txt
+terminal-output*.txt
+nohup.out
