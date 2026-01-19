@@ -87,6 +87,133 @@ def _event_signature(
     return [(event.name, event.data) for event in events]
 
 
+def _event_snapshot(events: list[ObservabilityEvent]) -> list[dict[str, object]]:
+    return [
+        {
+            "name": event.name,
+            "run_id": event.run_id,
+            "step": event.step,
+            "span_id": event.span_id,
+            "parent_span_id": event.parent_span_id,
+            "data": event.data,
+        }
+        for event in events
+    ]
+
+
+def test_run_and_run_async_emit_same_events() -> None:
+    tool_call = ToolCallOutput(
+        type="tool_call",
+        tool_name="math.add",
+        args={"a": 1, "b": 2},
+    ).model_dump_json()
+    final = FinalOutput(type="final", content="Done").model_dump_json()
+
+    def run_sync() -> list[ObservabilityEvent]:
+        llm = FakeLLM([tool_call, final])
+        tools = ToolRegistry()
+        tools.register(MathAddTool())
+        memory = InMemoryMemory()
+        sink = ListEventSink()
+        agent = Agent(llm=llm, tools=tools, memory=memory, max_steps=2)
+        agent.run(
+            "Add numbers",
+            event_sink=sink,
+            clock=_incrementing_clock(3000),
+            run_id_factory=lambda: "run_test",
+            span_id_factory=_id_factory("sp_"),
+        )
+        return sink.events
+
+    def run_async() -> list[ObservabilityEvent]:
+        llm = FakeLLM([tool_call, final])
+        tools = ToolRegistry()
+        tools.register(MathAddTool())
+        memory = InMemoryMemory()
+        sink = ListEventSink()
+        agent = Agent(llm=llm, tools=tools, memory=memory, max_steps=2)
+        asyncio.run(
+            agent.run_async(
+                "Add numbers",
+                event_sink=sink,
+                clock=_incrementing_clock(3000),
+                run_id_factory=lambda: "run_test",
+                span_id_factory=_id_factory("sp_"),
+            )
+        )
+        return sink.events
+
+    sync_events = run_sync()
+    async_events = run_async()
+
+    assert [event.name for event in sync_events] == [
+        event.name for event in async_events
+    ]
+    assert _event_snapshot(sync_events) == _event_snapshot(async_events)
+
+
+def test_error_emits_step_finished_once_with_error() -> None:
+    tool_call = ToolCallOutput(
+        type="tool_call",
+        tool_name="boom.tool",
+        args={"reason": "boom"},
+    ).model_dump_json()
+
+    def run_sync() -> list[ObservabilityEvent]:
+        llm = FakeLLM([tool_call])
+        tools = ToolRegistry()
+        tools.register(BoomTool())
+        memory = InMemoryMemory()
+        sink = ListEventSink()
+        agent = Agent(llm=llm, tools=tools, memory=memory)
+        with pytest.raises(ToolExecutionError):
+            agent.run(
+                "Trigger error",
+                event_sink=sink,
+                clock=_incrementing_clock(4000),
+                run_id_factory=lambda: "run_test",
+                span_id_factory=_id_factory("sp_"),
+            )
+        return sink.events
+
+    def run_async() -> list[ObservabilityEvent]:
+        llm = FakeLLM([tool_call])
+        tools = ToolRegistry()
+        tools.register(BoomTool())
+        memory = InMemoryMemory()
+        sink = ListEventSink()
+        agent = Agent(llm=llm, tools=tools, memory=memory)
+        with pytest.raises(ToolExecutionError):
+            asyncio.run(
+                agent.run_async(
+                    "Trigger error",
+                    event_sink=sink,
+                    clock=_incrementing_clock(4000),
+                    run_id_factory=lambda: "run_test",
+                    span_id_factory=_id_factory("sp_"),
+                )
+            )
+        return sink.events
+
+    sync_events = run_sync()
+    async_events = run_async()
+
+    assert [event.name for event in sync_events] == [
+        event.name for event in async_events
+    ]
+    assert _event_snapshot(sync_events) == _event_snapshot(async_events)
+
+    step_finished = [
+        event
+        for event in sync_events
+        if event.name == "agent.step.finished" and event.data["outcome"] == "error"
+    ]
+    assert len(step_finished) == 1
+
+    run_failed = [event for event in sync_events if event.name == "agent.run.failed"]
+    assert run_failed
+    assert run_failed[-1].data["error_type"] == "ToolExecutionError"
+
 def test_tool_error_parity_sync_async() -> None:
     tool_call = ToolCallOutput(
         type="tool_call",
