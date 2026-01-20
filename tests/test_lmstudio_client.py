@@ -4,7 +4,8 @@ import asyncio
 import importlib
 import importlib.util
 import json
-from typing import Any, cast
+import time
+from typing import Any, AsyncIterator, cast
 
 from ai_agent_orchestrator.protocol.messages import Message
 from task_runner_app.llm import PROTOCOL_REMINDER, LMStudioClient
@@ -57,24 +58,35 @@ def test_lmstudio_client_streams_sse_chunks() -> None:
 
     httpx = cast(Any, importlib.import_module("httpx"))
 
-    sse_body = "\n".join(
-        [
-            'data: {"choices":[{"delta":{"content":"Hello"}}]}',
-            "",
-            'data: {"choices":[{"delta":{"content":" world"}}]}',
-            "",
-            "data: [DONE]",
-            "",
-        ]
-    )
+    class DelayedByteStream(httpx.AsyncByteStream):
+        def __init__(self, chunks: list[bytes], delay: float) -> None:
+            self._chunks = chunks
+            self._delay = delay
+
+        async def __aiter__(self) -> AsyncIterator[bytes]:
+            for chunk in self._chunks:
+                await asyncio.sleep(self._delay)
+                yield chunk
+
+        async def aclose(self) -> None:
+            return None
+
+    sse_chunks = [
+        b'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
+        b'data: {"choices":[{"delta":{"content":" world"}}]}\n\n',
+        b"data: [DONE]\n\n",
+    ]
 
     def handler(request: Any) -> Any:
-        return httpx.Response(200, content=sse_body)
+        return httpx.Response(
+            200,
+            stream=DelayedByteStream(sse_chunks, delay=0.02),
+        )
 
     transport = httpx.MockTransport(handler)
     sync_client = httpx.Client(transport=transport, base_url="http://testserver")
 
-    async def collect() -> list[Any]:
+    async def collect() -> tuple[list[Any], list[float]]:
         async with httpx.AsyncClient(
             transport=transport, base_url="http://testserver"
         ) as async_client:
@@ -84,13 +96,21 @@ def test_lmstudio_client_streams_sse_chunks() -> None:
                 client=sync_client,
                 async_client=async_client,
             )
-            return [chunk async for chunk in llm.stream([Message(role="user", content="Hi")])]
+            chunks: list[Any] = []
+            timestamps: list[float] = []
+            async for chunk in llm.stream([Message(role="user", content="Hi")]):
+                if chunk.content:
+                    timestamps.append(time.perf_counter())
+                chunks.append(chunk)
+            return chunks, timestamps
 
-    chunks = asyncio.run(collect())
+    chunks, timestamps = asyncio.run(collect())
 
     assert [chunk.content for chunk in chunks[:-1]] == ["Hello", " world"]
     assert chunks[-1].is_final is True
     assert chunks[-1].content == ""
+    assert len(timestamps) == 2
+    assert timestamps[1] - timestamps[0] >= 0.01
 
 
 def test_lmstudio_client_stream_retries_on_protocol_violation() -> None:

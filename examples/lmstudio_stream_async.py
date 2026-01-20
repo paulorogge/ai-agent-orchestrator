@@ -8,7 +8,7 @@ from task_runner_app.llm import LMStudioClient
 
 
 async def main() -> None:
-    llm = LMStudioClient()
+    llm = LMStudioClient(timeout=120.0)
     memory = InMemoryMemory()
     tools = ToolRegistry()
     tools.register(EchoTool())
