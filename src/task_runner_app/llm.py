@@ -5,9 +5,9 @@ import importlib.util
 import json
 import os
 from dataclasses import dataclass
-from typing import Any, Sequence, cast
+from typing import Any, AsyncIterator, Sequence, cast
 
-from ai_agent_orchestrator.llm import LLMClient
+from ai_agent_orchestrator.llm import LLMClient, LLMStreamChunk
 from ai_agent_orchestrator.protocol.messages import Message
 
 DEFAULT_BASE_URL = "http://localhost:1234/v1"
@@ -38,6 +38,7 @@ class LMStudioClient(LLMClient):
         api_key: str | None = None,
         timeout: float = DEFAULT_TIMEOUT,
         client: Any | None = None,
+        async_client: Any | None = None,
     ) -> None:
         if importlib.util.find_spec("httpx") is None:
             raise RuntimeError(
@@ -62,6 +63,7 @@ class LMStudioClient(LLMClient):
             base_url=self._config.base_url,
             timeout=httpx_module.Timeout(self._config.timeout),
         )
+        self._async_client = async_client
 
     def generate(self, conversation: Sequence[Message]) -> str:
         raw = self._request(conversation)
@@ -97,6 +99,67 @@ class LMStudioClient(LLMClient):
             return cast(str, data["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError) as exc:
             raise RuntimeError("LM Studio response was missing message content") from exc
+
+    async def stream(
+        self, conversation: Sequence[Message]
+    ) -> AsyncIterator[LLMStreamChunk]:
+        payload = {
+            "model": self._config.model,
+            "messages": [_message_to_dict(msg) for msg in conversation],
+            "stream": True,
+        }
+        headers = {}
+        if self._config.api_key:
+            headers["Authorization"] = f"Bearer {self._config.api_key}"
+
+        async def _stream_with_client(client: Any) -> AsyncIterator[LLMStreamChunk]:
+            try:
+                async with client.stream(
+                    "POST",
+                    "/chat/completions",
+                    json=payload,
+                    headers=headers,
+                ) as response:
+                    response.raise_for_status()
+                    async for line in response.aiter_lines():
+                        if not line.startswith("data:"):
+                            continue
+                        data = line[len("data:") :].strip()
+                        if not data:
+                            continue
+                        if data == "[DONE]":
+                            yield LLMStreamChunk(content="", is_final=True)
+                            return
+                        try:
+                            event = json.loads(data)
+                        except json.JSONDecodeError as exc:
+                            raise RuntimeError(
+                                "LM Studio stream event was not valid JSON: "
+                                f"{data}"
+                            ) from exc
+                        try:
+                            delta = event["choices"][0].get("delta", {})
+                        except (KeyError, IndexError, TypeError) as exc:
+                            raise RuntimeError(
+                                "LM Studio stream event was missing delta content"
+                            ) from exc
+                        text = delta.get("content")
+                        if text is not None:
+                            yield LLMStreamChunk(content=cast(str, text))
+            except self._httpx.HTTPError as exc:
+                raise RuntimeError(f"LM Studio stream request failed: {exc}") from exc
+
+        if self._async_client is not None:
+            async for chunk in _stream_with_client(self._async_client):
+                yield chunk
+            return
+
+        async with self._httpx.AsyncClient(
+            base_url=self._config.base_url,
+            timeout=self._httpx.Timeout(self._config.timeout),
+        ) as client:
+            async for chunk in _stream_with_client(client):
+                yield chunk
 
 
 def _message_to_dict(message: Message) -> dict[str, str]:
