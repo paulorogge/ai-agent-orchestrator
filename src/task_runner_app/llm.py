@@ -183,8 +183,7 @@ class LMStudioClient(LLMClient):
                 client, retry_conversation, retry_parts
             ):
                 yield chunk
-            retry_text = "".join(retry_parts)
-            yield LLMStreamChunk(content=retry_text, is_final=True)
+            yield LLMStreamChunk(content="", is_final=True)
 
         if self._async_client is not None:
             async for chunk in _run_with_client(self._async_client):

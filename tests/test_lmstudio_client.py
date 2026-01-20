@@ -179,7 +179,7 @@ def test_lmstudio_client_stream_retries_on_protocol_violation() -> None:
         '{"type":"final","content":"ok"}',
     ]
     assert chunks[-1].is_final is True
-    assert chunks[-1].content == '{"type":"final","content":"ok"}'
+    assert chunks[-1].content == ""
     assert len(requests) == 2
 
     retry_body = json.loads(requests[1].content)
