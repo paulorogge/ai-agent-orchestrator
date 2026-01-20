@@ -72,8 +72,12 @@ def test_lmstudio_client_streams_sse_chunks() -> None:
             return None
 
     sse_chunks = [
-        b'data: {"choices":[{"delta":{"content":"{\\"type\\":\\"final\\",\\"content\\":\\"Hello"}}]}\n\n',
-        b'data: {"choices":[{"delta":{"content":" world\\"}"}}]}\n\n',
+        b"data: "
+        b'{"choices":[{"delta":{"content":"{\\"type\\":\\"final\\",'
+        b'\\"content\\":\\"Hello"}}]}\n'
+        b"\n",
+        b'data: {"choices":[{"delta":{"content":" world\\"}"}}]}\n'
+        b"\n",
         b"data: [DONE]\n\n",
     ]
 
@@ -139,7 +143,8 @@ def test_lmstudio_client_stream_retries_on_protocol_violation() -> None:
 
     sse_retry_body = "\n".join(
         [
-            'data: {"choices":[{"delta":{"content":"{\\"type\\":\\"final\\",\\"content\\":\\"ok\\"}"}}]}',
+            'data: {"choices":[{"delta":{"content":"{\\"type\\":\\"final\\",'
+            '\\"content\\":\\"ok\\"}"}}]}',
             "",
             "data: [DONE]",
             "",
