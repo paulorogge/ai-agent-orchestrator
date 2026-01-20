@@ -5,7 +5,7 @@ import importlib
 import importlib.util
 import json
 import time
-from typing import Any, AsyncIterator, cast
+from typing import Any, AsyncIterator, Protocol, cast
 
 from ai_agent_orchestrator.protocol.messages import Message
 from task_runner_app.llm import PROTOCOL_REMINDER, LMStudioClient
@@ -58,7 +58,12 @@ def test_lmstudio_client_streams_sse_chunks() -> None:
 
     httpx = cast(Any, importlib.import_module("httpx"))
 
-    class DelayedByteStream(httpx.AsyncByteStream):
+    class _AsyncByteStream(Protocol):
+        def __aiter__(self) -> AsyncIterator[bytes]: ...
+
+        async def aclose(self) -> None: ...
+
+    class DelayedByteStream(_AsyncByteStream):
         def __init__(self, chunks: list[bytes], delay: float) -> None:
             self._chunks = chunks
             self._delay = delay
