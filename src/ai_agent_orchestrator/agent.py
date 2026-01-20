@@ -761,9 +761,22 @@ class Agent:
                         raise TypeError(
                             "Streaming requires an async stream method on the LLM client."
                         )
+                    stream_chunks: list[Any] = []
+                    stream_texts: list[str] = []
                     async for chunk in stream_response:
                         chunk_text = _read_chunk_text(chunk)
-                        raw_output += chunk_text
+                        stream_chunks.append(chunk)
+                        stream_texts.append(chunk_text)
+                    raw_output = "".join(stream_texts)
+                    if stream_chunks:
+                        last_chunk = stream_chunks[-1]
+                        last_text = stream_texts[-1]
+                        if (
+                            getattr(last_chunk, "is_final", False)
+                            and last_text
+                            and _is_protocol_compliant(last_text)
+                        ):
+                            raw_output = last_text
                 else:
                     async_llm = cast(SupportsAsyncGenerate, self.llm)
                     if inspect.iscoroutinefunction(async_llm.generate):
@@ -1032,6 +1045,26 @@ def _read_chunk_text(chunk: Any) -> str:
     if hasattr(chunk, "content"):
         return str(chunk.content)
     return str(chunk)
+
+
+def _is_protocol_compliant(raw: str) -> bool:
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return False
+
+    if not isinstance(data, dict):
+        return False
+
+    message_type = data.get("type")
+    if message_type == "tool_call":
+        tool_name = data.get("tool_name")
+        args = data.get("args", {})
+        return isinstance(tool_name, str) and isinstance(args, dict)
+    if message_type == "final":
+        return "content" in data
+
+    return False
 
 
 def _chunk_text(text: str, chunk_size: int) -> Iterable[str]:
