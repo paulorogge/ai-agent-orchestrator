@@ -12,3 +12,4 @@ gitlog*.txt
 terminal-dump*.txt
 terminal-output*.txt
 nohup.out
+lmstudio_body.json
