@@ -72,12 +72,15 @@ def test_lmstudio_client_streams_sse_chunks() -> None:
             return None
 
     sse_chunks = [
-        b'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
-        b'data: {"choices":[{"delta":{"content":" world"}}]}\n\n',
+        b'data: {"choices":[{"delta":{"content":"{\\"type\\":\\"final\\",\\"content\\":\\"Hello"}}]}\n\n',
+        b'data: {"choices":[{"delta":{"content":" world\\"}"}}]}\n\n',
         b"data: [DONE]\n\n",
     ]
 
+    requests: list[Any] = []
+
     def handler(request: Any) -> Any:
+        requests.append(request)
         return httpx.Response(
             200,
             stream=DelayedByteStream(sse_chunks, delay=0.02),
@@ -106,11 +109,15 @@ def test_lmstudio_client_streams_sse_chunks() -> None:
 
     chunks, timestamps = asyncio.run(collect())
 
-    assert [chunk.content for chunk in chunks[:-1]] == ["Hello", " world"]
+    assert [chunk.content for chunk in chunks[:-1]] == [
+        '{"type":"final","content":"Hello',
+        ' world"}',
+    ]
     assert chunks[-1].is_final is True
     assert chunks[-1].content == ""
     assert len(timestamps) == 2
     assert timestamps[1] - timestamps[0] >= 0.01
+    assert len(requests) == 1
 
 
 def test_lmstudio_client_stream_retries_on_protocol_violation() -> None:
@@ -130,17 +137,25 @@ def test_lmstudio_client_stream_retries_on_protocol_violation() -> None:
         ]
     )
 
+    sse_retry_body = "\n".join(
+        [
+            'data: {"choices":[{"delta":{"content":"{\\"type\\":\\"final\\",\\"content\\":\\"ok\\"}"}}]}',
+            "",
+            "data: [DONE]",
+            "",
+        ]
+    )
+
     requests: list[Any] = []
 
     def handler(request: Any) -> Any:
         requests.append(request)
         payload = json.loads(request.content)
         if payload.get("stream"):
-            return httpx.Response(200, content=sse_body)
-        return httpx.Response(
-            200,
-            json={"choices": [{"message": {"content": '{"type":"final","content":"ok"}'}}]},
-        )
+            if len(requests) == 1:
+                return httpx.Response(200, content=sse_body)
+            return httpx.Response(200, content=sse_retry_body)
+        raise AssertionError("Expected streaming request payloads.")
 
     transport = httpx.MockTransport(handler)
     sync_client = httpx.Client(transport=transport, base_url="http://testserver")
@@ -159,7 +174,10 @@ def test_lmstudio_client_stream_retries_on_protocol_violation() -> None:
 
     chunks = asyncio.run(collect())
 
-    assert [chunk.content for chunk in chunks[:-1]] == ["oi tudo bem"]
+    assert [chunk.content for chunk in chunks[:-1]] == [
+        "oi tudo bem",
+        '{"type":"final","content":"ok"}',
+    ]
     assert chunks[-1].is_final is True
     assert chunks[-1].content == '{"type":"final","content":"ok"}'
     assert len(requests) == 2

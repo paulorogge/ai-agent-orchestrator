@@ -108,17 +108,18 @@ class LMStudioClient(LLMClient):
     async def stream(
         self, conversation: Sequence[Message]
     ) -> AsyncIterator[LLMStreamChunk]:
-        payload = {
-            "model": self._config.model,
-            "messages": [_message_to_dict(msg) for msg in conversation],
-            "stream": True,
-        }
         headers = {}
         if self._config.api_key:
             headers["Authorization"] = f"Bearer {self._config.api_key}"
-        buffer_parts: list[str] = []
 
-        async def _stream_with_client(client: Any) -> AsyncIterator[LLMStreamChunk]:
+        async def _stream_with_client(
+            client: Any, messages: Sequence[Message], buffer_parts: list[str]
+        ) -> AsyncIterator[LLMStreamChunk]:
+            payload = {
+                "model": self._config.model,
+                "messages": [_message_to_dict(msg) for msg in messages],
+                "stream": True,
+            }
             try:
                 async with client.stream(
                     "POST",
@@ -160,27 +161,42 @@ class LMStudioClient(LLMClient):
             except self._httpx.HTTPError as exc:
                 raise RuntimeError(f"LM Studio stream request failed: {exc}") from exc
 
-        if self._async_client is not None:
-            async for chunk in _stream_with_client(self._async_client):
+        async def _run_with_client(
+            client: Any,
+        ) -> AsyncIterator[LLMStreamChunk]:
+            first_response_parts: list[str] = []
+            async for chunk in _stream_with_client(
+                client, conversation, first_response_parts
+            ):
                 yield chunk
-        else:
-            async with self._httpx.AsyncClient(
-                base_url=self._config.base_url,
-                timeout=self._httpx.Timeout(self._config.timeout),
-            ) as client:
-                async for chunk in _stream_with_client(client):
-                    yield chunk
 
-        buffer_text = "".join(buffer_parts)
-        if _is_protocol_compliant(buffer_text):
-            yield LLMStreamChunk(content="", is_final=True)
+            first_response = "".join(first_response_parts)
+            if _is_protocol_compliant(first_response):
+                yield LLMStreamChunk(content="", is_final=True)
+                return
+
+            retry_conversation = list(conversation) + [
+                Message(role="system", content=PROTOCOL_REMINDER)
+            ]
+            retry_parts: list[str] = []
+            async for chunk in _stream_with_client(
+                client, retry_conversation, retry_parts
+            ):
+                yield chunk
+            retry_text = "".join(retry_parts)
+            yield LLMStreamChunk(content=retry_text, is_final=True)
+
+        if self._async_client is not None:
+            async for chunk in _run_with_client(self._async_client):
+                yield chunk
             return
 
-        corrected_text = self._ensure_protocol_with_retry(buffer_text, conversation)
-        if corrected_text != buffer_text:
-            yield LLMStreamChunk(content=corrected_text, is_final=True)
-        else:
-            yield LLMStreamChunk(content="", is_final=True)
+        async with self._httpx.AsyncClient(
+            base_url=self._config.base_url,
+            timeout=self._httpx.Timeout(self._config.timeout),
+        ) as client:
+            async for chunk in _run_with_client(client):
+                yield chunk
 
 
 def _message_to_dict(message: Message) -> dict[str, str]:
