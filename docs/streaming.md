@@ -52,6 +52,8 @@ that tools never run on partial output.
 
 - LM Studio can now stream over SSE (OpenAI-compatible) when the server has streaming
   enabled. If streaming is not available, the agent uses the buffered fallback.
+- `LMStudioClient.stream` preserves the same protocol compliance retry as `generate()`
+  (one retry) when responses are not valid tool-call/final JSON.
 
 ## LM Studio examples
 
