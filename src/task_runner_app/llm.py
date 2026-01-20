@@ -125,9 +125,12 @@ class LMStudioClient(LLMClient):
                     "/chat/completions",
                     json=payload,
                     headers=headers,
+                    timeout=self._httpx.Timeout(self._config.timeout),
                 ) as response:
                     response.raise_for_status()
                     async for line in response.aiter_lines():
+                        if not line:
+                            continue
                         if not line.startswith("data:"):
                             continue
                         data = line[len("data:") :].strip()
@@ -149,9 +152,11 @@ class LMStudioClient(LLMClient):
                                 "LM Studio stream event was missing delta content"
                             ) from exc
                         text = delta.get("content")
-                        if text is not None:
-                            buffer_parts.append(cast(str, text))
-                            yield LLMStreamChunk(content=cast(str, text))
+                        if text is None:
+                            continue
+                        text_value = cast(str, text)
+                        buffer_parts.append(text_value)
+                        yield LLMStreamChunk(content=text_value)
             except self._httpx.HTTPError as exc:
                 raise RuntimeError(f"LM Studio stream request failed: {exc}") from exc
 

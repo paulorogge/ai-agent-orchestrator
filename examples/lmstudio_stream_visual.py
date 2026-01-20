@@ -1,9 +1,7 @@
 import asyncio
 import time
 
-from ai_agent_orchestrator.agent import Agent
-from ai_agent_orchestrator.memory.in_memory import InMemoryMemory
-from ai_agent_orchestrator.tools.registry import ToolRegistry
+from ai_agent_orchestrator.protocol.messages import Message
 from task_runner_app.llm import LMStudioClient
 
 
@@ -15,7 +13,6 @@ def _preview(text: str, limit: int = 80) -> str:
 
 async def main() -> None:
     llm = LMStudioClient(timeout=120.0)
-    agent = Agent(llm=llm, tools=ToolRegistry(), memory=InMemoryMemory(), max_steps=3)
 
     msg = (
         'Responda SOMENTE com JSON no formato: {"type":"final","content":"..."}.\n'
@@ -25,14 +22,16 @@ async def main() -> None:
     start = time.perf_counter()
     chunk_index = 0
 
-    async for chunk in agent.stream_async(msg):
-        if not chunk.text and not chunk.is_final:
+    conversation = [Message(role="user", content=msg)]
+
+    async for chunk in llm.stream(conversation):
+        if not chunk.content and not chunk.is_final:
             continue
 
         chunk_index += 1
         now = time.perf_counter()
         delta = now - start
-        text = chunk.text
+        text = chunk.content
         text_len = len(text)
         preview = _preview(text)
         final_flag = "True" if chunk.is_final else "False"
