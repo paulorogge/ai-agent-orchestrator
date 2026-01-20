@@ -52,3 +52,43 @@ that tools never run on partial output.
 
 - LM Studio can now stream over SSE (OpenAI-compatible) when the server has streaming
   enabled. If streaming is not available, the agent uses the buffered fallback.
+
+## LM Studio examples
+
+Set the environment variables (PowerShell examples):
+
+```powershell
+$env:LMSTUDIO_BASE_URL = "http://localhost:1234/v1"
+$env:LMSTUDIO_MODEL = "your-model-name"
+$env:LMSTUDIO_API_KEY = "optional"
+```
+
+Run the examples:
+
+```powershell
+python examples/lmstudio_run_async.py
+python examples/lmstudio_stream_async.py
+python examples/lmstudio_stream_timing.py
+python examples/lmstudio_stream_visual.py
+```
+
+If you want to confirm the SSE stream manually, use `curl.exe` with a JSON file:
+
+```powershell
+@'
+{
+  "model": "your-model-name",
+  "messages": [
+    { "role": "user", "content": "Say hello in one short sentence." }
+  ],
+  "stream": true
+}
+'@ | Set-Content -Path .\lmstudio_request.json -Encoding UTF8
+
+curl.exe http://localhost:1234/v1/chat/completions `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $env:LMSTUDIO_API_KEY" `
+  --data-binary "@lmstudio_request.json"
+```
+
+If you are not using an API key, omit the `Authorization` header.
