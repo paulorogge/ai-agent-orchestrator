@@ -4,6 +4,9 @@ The agent supports streaming model output via `Agent.stream_async(...)`. This as
 lets you render incremental output while the agent buffers the full model response for
 protocol parsing and tool execution.
 
+Streaming can be real-time when the configured provider exposes a streaming-capable
+`stream(...)` method; otherwise the agent falls back to a buffered response.
+
 ## StreamChunk shape
 
 `Agent.stream_async(...)` yields `StreamChunk` values with a stable shape:
@@ -44,3 +47,8 @@ async def stream(agent: Agent, prompt: str) -> str:
 Streaming is incremental, but tool calls are still executed only after the full model
 response is buffered and parsed. This preserves the existing tool-call protocol and ensures
 that tools never run on partial output.
+
+## Provider notes
+
+- LM Studio can now stream over SSE (OpenAI-compatible) when the server has streaming
+  enabled. If streaming is not available, the agent uses the buffered fallback.
