@@ -4,8 +4,8 @@ The agent supports streaming model output via `Agent.stream_async(...)`. This as
 lets you render incremental output while the agent buffers the full model response for
 protocol parsing and tool execution.
 
-Streaming can be real-time when the configured provider exposes a streaming-capable
-`stream(...)` method; otherwise the agent falls back to a buffered response.
+Streaming output from the agent is buffered: the agent always collects the full model
+response, parses it, and then emits chunks that subdivide the final response content.
 
 ## StreamChunk shape
 
@@ -23,10 +23,11 @@ StreamChunk(
 
 Fields:
 
-- `text`: the raw incremental model text for the current step.
+- `text`: a slice of the final response content for the current step.
 - `step`: the agent step that produced the chunk.
 - `is_final`: `True` only when the agent has produced a final response (or the max-steps
-  fallback). The final chunk's `text` contains the final response content.
+  fallback). The final chunk's `text` is the last slice of the response, not the full
+  response content.
 
 ## Usage
 
@@ -36,9 +37,9 @@ from ai_agent_orchestrator.agent import Agent
 async def stream(agent: Agent, prompt: str) -> str:
     full_text = ""
     async for chunk in agent.stream_async(prompt):
-        if chunk.is_final:
-            return chunk.text
         full_text += chunk.text
+        if chunk.is_final:
+            break
     return full_text
 ```
 

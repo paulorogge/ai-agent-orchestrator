@@ -76,6 +76,26 @@ def test_agent_streaming_matches_non_streaming() -> None:
     assert response.content == streamed_text
 
 
+def test_streamed_chunks_reconstruct_final_output() -> None:
+    output = FinalOutput(type="final", content="Streamed response").model_dump_json()
+    chunks = [output[:12], output[12:24], output[24:]]
+
+    llm = FakeStreamingLLM(output, chunks)
+    agent = Agent(llm=llm, tools=ToolRegistry(), memory=InMemoryMemory())
+
+    async def collect() -> tuple[str, str]:
+        streamed_text = ""
+        async for chunk in agent.stream_async("Hi"):
+            streamed_text += chunk.text
+        response = await agent.run_async("Hi")
+        return streamed_text, response.content
+
+    streamed_text, final_text = asyncio.run(collect())
+
+    assert streamed_text == "Streamed response"
+    assert streamed_text == final_text
+
+
 def test_streaming_plain_text_fallbacks_to_final_plain() -> None:
     output = "olá mundo"
     chunks = ["olá", " mundo"]
