@@ -33,7 +33,7 @@ class SupportsAsyncGenerate(Protocol):
 
 
 class SupportsAsyncStream(Protocol):
-    """Protocol for LLMs that provide an async stream method."""
+    """Optional protocol for LLMs that provide an async stream method."""
 
     async def stream(
         self, conversation: Sequence[Message]
@@ -41,9 +41,10 @@ class SupportsAsyncStream(Protocol):
         """Yield streaming chunks for a conversation."""
 
 
-LLMClientProtocol: TypeAlias = (
-    SupportsSyncGenerate | SupportsAsyncGenerate | SupportsAsyncStream
-)
+LLMClientProtocol: TypeAlias = SupportsSyncGenerate | SupportsAsyncGenerate
+
+
+LLMClientStreamProtocol: TypeAlias = SupportsAsyncStream
 
 
 class LLMClient(ABC):
