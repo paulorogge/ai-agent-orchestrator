@@ -754,12 +754,11 @@ class Agent:
                 )
 
                 raw_output = ""
-                if hasattr(self.llm, "stream"):
-                    stream_llm = cast(SupportsAsyncStream, self.llm)
-                    stream_response = stream_llm.stream(conversation)
+                if isinstance(self.llm, SupportsAsyncStream):
+                    stream_response = self.llm.stream(conversation)
                     if not hasattr(stream_response, "__aiter__"):
                         raise TypeError(
-                            "Streaming requires an async stream method on the LLM client."
+                            "Streaming requires an async iterator from the LLM stream method."
                         )
                     stream_chunks: list[Any] = []
                     stream_texts: list[str] = []

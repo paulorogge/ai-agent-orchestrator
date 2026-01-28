@@ -1,3 +1,9 @@
+"""Optional LM Studio integration example.
+
+Requires a running LM Studio server plus LMSTUDIO_BASE_URL and LMSTUDIO_MODEL
+(LMSTUDIO_API_KEY optional). Not exercised in CI or offline environments.
+"""
+
 import asyncio
 import time
 
