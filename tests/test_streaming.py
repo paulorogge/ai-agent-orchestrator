@@ -83,17 +83,26 @@ def test_streamed_chunks_reconstruct_final_output() -> None:
     llm = FakeStreamingLLM(output, chunks)
     agent = Agent(llm=llm, tools=ToolRegistry(), memory=InMemoryMemory())
 
-    async def collect() -> tuple[str, str]:
+    async def collect() -> tuple[str, int]:
         streamed_text = ""
+        final_count = 0
         async for chunk in agent.stream_async("Hi"):
             streamed_text += chunk.text
-        response = await agent.run_async("Hi")
-        return streamed_text, response.content
+            if chunk.is_final:
+                final_count += 1
+        return streamed_text, final_count
 
-    streamed_text, final_text = asyncio.run(collect())
+    streamed_text, final_count = asyncio.run(collect())
+
+    llm_sync = FakeStreamingLLM(output, chunks)
+    agent_sync = Agent(
+        llm=llm_sync, tools=ToolRegistry(), memory=InMemoryMemory()
+    )
+    final_text = asyncio.run(agent_sync.run_async("Hi")).content
 
     assert streamed_text == "Streamed response"
     assert streamed_text == final_text
+    assert final_count == 1
 
 
 def test_streaming_plain_text_fallbacks_to_final_plain() -> None:

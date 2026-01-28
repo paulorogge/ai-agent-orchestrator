@@ -2,10 +2,12 @@
 
 The agent supports streaming model output via `Agent.stream_async(...)`. This async generator
 lets you render incremental output while the agent buffers the full model response for
-protocol parsing and tool execution.
+protocol parsing and tool execution. The buffering step means the agent-level stream is a
+safe, parsed view of the final response rather than a real-time token stream.
 
 Streaming output from the agent is buffered: the agent always collects the full model
-response, parses it, and then emits chunks that subdivide the final response content.
+response, parses it, and then emits chunks that subdivide the final response content. If
+you need the full response, you must concatenate all `chunk.text` values in order.
 
 ## StreamChunk shape
 
@@ -27,7 +29,7 @@ Fields:
 - `step`: the agent step that produced the chunk.
 - `is_final`: `True` only when the agent has produced a final response (or the max-steps
   fallback). The final chunk's `text` is the last slice of the response, not the full
-  response content.
+  response content. Consumers should concatenate all chunks to reconstruct the full text.
 
 ## Usage
 
@@ -51,12 +53,19 @@ that tools never run on partial output.
 
 ## Provider notes
 
-- LM Studio can now stream over SSE (OpenAI-compatible) when the server has streaming
-  enabled. If streaming is not available, the agent uses the buffered fallback.
+Provider-level streaming can be real-time, but the agent stream stays buffered. The agent
+waits for the provider output, parses it, and then emits sliced chunks based on the final
+response content.
+
+- LM Studio can stream over SSE (OpenAI-compatible) when the server has streaming enabled.
+  The agent still buffers the response before emitting `StreamChunk` values.
 - `LMStudioClient.stream` preserves the same protocol compliance retry as `generate()`
   (one retry) when responses are not valid tool-call/final JSON.
 
 ## LM Studio examples
+
+> These examples are optional, best-effort integrations that require a running LM Studio
+> server. They are not run in CI or offline environments.
 
 Set the environment variables (PowerShell examples):
 

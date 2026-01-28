@@ -4,7 +4,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
-from typing import AsyncIterator, Deque, Protocol, Sequence, TypeAlias
+from typing import AsyncIterator, Deque, Protocol, Sequence, TypeAlias, runtime_checkable
 
 from ai_agent_orchestrator.protocol.messages import Message
 from ai_agent_orchestrator.protocol.outputs import FinalOutput
@@ -32,19 +32,22 @@ class SupportsAsyncGenerate(Protocol):
         """Generate a response from a conversation asynchronously."""
 
 
+@runtime_checkable
 class SupportsAsyncStream(Protocol):
     """Optional protocol for LLMs that provide an async stream method."""
 
-    async def stream(
+    def stream(
         self, conversation: Sequence[Message]
     ) -> AsyncIterator[LLMStreamChunk]:
         """Yield streaming chunks for a conversation."""
 
 
 LLMClientProtocol: TypeAlias = SupportsSyncGenerate | SupportsAsyncGenerate
+# Minimum LLM contract: must implement generate (sync or async).
 
 
 LLMClientStreamProtocol: TypeAlias = SupportsAsyncStream
+# Optional streaming capability separate from the core generate contract.
 
 
 class LLMClient(ABC):
